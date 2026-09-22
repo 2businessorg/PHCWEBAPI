@@ -17,10 +17,12 @@ public sealed class GetRctRankingQueryHandler : IRequestHandler<GetRctRankingQue
     };
 
     private readonly ISrtScoreRepository _srt;
+    private readonly ICvAnexoRepository _anexos;
 
-    public GetRctRankingQueryHandler(ISrtScoreRepository srt)
+    public GetRctRankingQueryHandler(ISrtScoreRepository srt, ICvAnexoRepository anexos)
     {
         _srt = srt;
+        _anexos = anexos;
     }
 
     public async Task<RctRankingDto> Handle(GetRctRankingQuery request, CancellationToken cancellationToken)
@@ -36,6 +38,8 @@ public sealed class GetRctRankingQueryHandler : IRequestHandler<GetRctRankingQue
         foreach (var row in ordered)
         {
             var breakdown = ParseBreakdown(row.JustificationJson);
+            // AH-02 read-path: re-AssertQuoteIsSubset against current anexos.u_texto (do not trust stored JSON alone).
+            await AssertQuotesAgainstCurrentUTextoAsync(row.CveStamp, breakdown, cancellationToken);
             candidates.Add(new RankedCandidateDto
             {
                 Position = position++,
@@ -63,6 +67,21 @@ public sealed class GetRctRankingQueryHandler : IRequestHandler<GetRctRankingQue
         ForbiddenCopyGuard.ThrowIfForbidden(dto.Title, "title");
         ForbiddenCopyGuard.ThrowIfForbidden(dto.Footer, "footer");
         return dto;
+    }
+
+    private async Task AssertQuotesAgainstCurrentUTextoAsync(
+        string cveStamp,
+        IReadOnlyList<CriterionBreakdownDto> breakdown,
+        CancellationToken ct)
+    {
+        var quotes = breakdown.Where(b => !string.IsNullOrEmpty(b.Quote)).ToList();
+        if (quotes.Count == 0)
+            return;
+
+        var anexo = await _anexos.GetCvAnexoAsync(cveStamp, ct);
+        var uTexto = anexo?.Texto ?? string.Empty;
+        foreach (var row in quotes)
+            RubricEvidenceScorer.AssertQuoteIsSubset(uTexto, row.Quote);
     }
 
     internal static IReadOnlyList<CriterionBreakdownDto> ParseBreakdown(string? json)
