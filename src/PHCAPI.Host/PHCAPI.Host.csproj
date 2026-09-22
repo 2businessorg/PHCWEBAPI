@@ -35,6 +35,7 @@
 		<ProjectReference Include="../Modules/Auth/Auth.Presentation/Auth.Presentation.csproj" />
 		<ProjectReference Include="../Modules/Auth/Auth.Infrastructure/Auth.Infrastructure.csproj" />
 		<ProjectReference Include="../Admin.UI/Admin.UI.csproj" />
+		<ProjectReference Include="../Shared/Shared.Infrastructure/Shared.Infrastructure.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
