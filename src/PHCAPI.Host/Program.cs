@@ -30,6 +30,7 @@ using Auth.Infrastructure.Persistence;
 using System.Threading.RateLimiting;
 using PHCAPI.Host.Extensions;
 using Shared.Infrastructure.DocumentTextExtraction;
+using Shared.Infrastructure.Privacy.Pseudonymization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -111,6 +112,7 @@ try
 
     builder.Services.AddConfigurableRateLimiting(builder.Configuration);
     builder.Services.AddDocumentTextExtraction(builder.Configuration);
+    builder.Services.AddPseudonymization(builder.Configuration);
 
     builder.Services.AddParametersPresentation(builder.Configuration, enableRest: true, enableGraphQL: false);
     builder.Services.AddProvidersPresentation(builder.Configuration, enableRest: true, enableGraphQL: false);
