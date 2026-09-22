@@ -1,0 +1,15 @@
+{
+    "docTypeId": 1,
+    "clientId": 2,
+    "bankAccountId": 1,
+    "addFields": null,
+    "lines": [
+        {
+            "invoiceNumber": 5,
+            "invoiceTypeId": 1,
+            "invoiceYear": 2026,
+            "amount": 20.0,
+            "addFields": null
+        }
+    ]
+}

@@ -1,0 +1,28 @@
+$kind: http-request
+name: /clients
+url: "{{baseUrl}}/clients"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"string\",\r
+
+    \    \"nuit\": \"123332\",\r
+
+    \    \"phone\": \"string\",\r
+
+    \    \"address\": \"string\",\r
+
+    \    \"addFields\":{\r
+
+    \        \"name2\":\"nomeeee2\"\r
+
+    \    }\r
+
+    }"
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 4000

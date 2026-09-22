@@ -1,0 +1,9 @@
+{
+    "docTypeId": 1,
+    "clientId": 2,
+    "bankAccountId": 1,
+    "amount": 500.0,
+    "date": null,
+    "descricao": null,
+    "addFields": null
+}

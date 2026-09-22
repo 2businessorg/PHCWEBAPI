@@ -1,0 +1,164 @@
+@page "/Admin/Roles"
+@model Admin.UI.Pages.Roles.IndexModel
+@{
+    ViewData["Title"] = "Gestão de Roles";
+    ViewData["Subtitle"] = "Configure roles e permissões do sistema";
+}
+
+<!-- Success Message -->
+@if (Model.SuccessMessage != null)
+{
+    <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-slide-in">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-600 text-xl mr-3"></i>
+            <p class="text-sm font-medium text-green-800">@Model.SuccessMessage</p>
+        </div>
+    </div>
+}
+
+<!-- Error Message -->
+@if (Model.ErrorMessage != null)
+{
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 animate-slide-in">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-600 text-xl mr-3"></i>
+            <p class="text-sm font-medium text-red-800">@Model.ErrorMessage</p>
+        </div>
+    </div>
+}
+
+<!-- Header Actions -->
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center space-x-4">
+        <div class="px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <span class="text-sm font-medium text-gray-600">Total: </span>
+            <span class="text-lg font-bold text-primary">@Model.Roles.Count</span>
+        </div>
+    </div>
+    
+    <div class="flex space-x-3">
+        <a href="/Admin/Roles" class="px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-sync-alt mr-2"></i>Actualizar
+        </a>
+        <a href="/Admin/Roles/Create" class="px-6 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+            <i class="fas fa-plus mr-2"></i>Nova Role
+        </a>
+    </div>
+</div>
+
+<!-- Roles Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    @if (Model.Roles.Count == 0)
+    {
+        <div class="p-12 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <i class="fas fa-shield-alt text-3xl text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma role encontrada</h3>
+            <p class="text-gray-500 mb-6">Comece por criar a primeira role do sistema.</p>
+            <a href="/Admin/Roles/Create" class="inline-flex items-center px-6 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+                <i class="fas fa-plus mr-2"></i>Criar Primeira Role
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Role
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Descrição
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Utilizadores
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Tipo
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach (var role in Model.Roles)
+                    {
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 flex-shrink-0">
+                                        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+                                            <i class="fas @role.Icon text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-bold text-gray-900">@role.Name</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-600">@role.Description</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <i class="fas fa-users text-gray-400 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-900">@role.UserCount</span>
+                                    <a href="/Admin/Users?role=@role.Name" class="ml-2 text-xs text-primary hover:text-secondary">
+                                        Ver
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (role.IsSystemRole)
+                                {
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        <i class="fas fa-lock mr-1"></i> Sistema
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                        <i class="fas fa-star mr-1"></i> Personalizada
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex items-center justify-end space-x-3">
+                                    <a href="/Admin/Roles/Edit/@role.Id" class="text-primary hover:text-secondary transition" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    @if (!role.IsSystemRole)
+                                    {
+                                        <button onclick="confirmDelete('@role.Name', '@role.Id')" class="text-gray-400 hover:text-red-600 transition" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Delete Form (hidden) -->
+<form id="deleteForm" method="post" asp-page-handler="Delete" class="hidden">
+    <input type="hidden" id="roleIdToDelete" name="roleId" />
+</form>
+
+@section Scripts {
+<script>
+    function confirmDelete(roleName, roleId) {
+        if (confirm(`Tem certeza que deseja eliminar a role "${roleName}"?\n\nOs utilizadores com esta role perderão as permissões associadas.`)) {
+            document.getElementById('roleIdToDelete').value = roleId;
+            document.getElementById('deleteForm').submit();
+        }
+    }
+</script>
+}

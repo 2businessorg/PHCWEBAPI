@@ -1,0 +1,9 @@
+$kind: http-request
+name: /clients/no
+url: "{{baseUrl}}/clients/9381"
+method: GET
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 3000

@@ -1,0 +1,27 @@
+$kind: http-request
+name: /stocks/{reference}
+description: Atualiza parcialmente um stock por referência. Todos os campos são opcionais.
+url: "{{baseUrl}}/stocks/{{referencia}}"
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+        "description": "Descrição Atualizada",
+        "prices": [
+            {
+                "table": 1,
+                "value": 1300.00,
+                "isTaxIncluded": false
+            },
+            {
+                "table": 2,
+                "value": 1250.00,
+                "isTaxIncluded": true
+            }
+        ],
+        "observations": "Preço ajustado em Abril"
+    }
+auth:
+  type: noauth
+order: 1000

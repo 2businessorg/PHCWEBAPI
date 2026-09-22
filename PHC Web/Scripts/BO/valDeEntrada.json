@@ -1,0 +1,30 @@
+{
+    "Ndos": 45,
+    "No": 2,
+    "Boano": null,
+    "Estab": null,
+    "Nome": null,
+    "Data": null,
+    "Moeda": null,
+    "AddFieldsByTable": {
+        "bo": {
+            "vendnm": "Persinaaa",
+            "vendedor": 1
+        }
+    },
+    "LstBi": [
+        {
+            "Ref": "P1",
+            "Qtt": 6.0,
+            "Design": null,
+            "PrecoUnitario": null,
+            "TabIva": null,
+            "IvaIncl": null,
+            "AddFieldsByTable": {
+                "bi": {
+                    "u_pcprcss": 2.0
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,217 @@
+@page "/Admin/Users/Edit/{id}"
+@model Admin.UI.Pages.Users.EditModel
+@{
+    ViewData["Title"] = "Editar Utilizador";
+    ViewData["Subtitle"] = $"Editar dados de {Model.UserDetails.UserName}";
+}
+
+<div class="max-w-4xl mx-auto">
+    <!-- Breadcrumb -->
+    <div class="mb-6">
+        <nav class="flex items-center space-x-2 text-sm">
+            <a href="/Admin/Users" class="text-gray-500 hover:text-gray-700 transition">
+                <i class="fas fa-users mr-1"></i>Utilizadores
+            </a>
+            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+            <span class="text-gray-900 font-medium">Editar</span>
+        </nav>
+    </div>
+
+    <!-- User Info Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div class="p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl">
+                    @Model.UserDetails.UserName.Substring(0, 1).ToUpper()
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-gray-900">@Model.UserDetails.UserName</h2>
+                    <p class="text-sm text-gray-500">@Model.UserDetails.Email</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Email</p>
+                        @if (Model.UserDetails.EmailConfirmed)
+                        {
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                <i class="fas fa-check-circle"></i> Confirmado
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700">
+                                <i class="fas fa-times-circle"></i> Não Confirmado
+                            </span>
+                        }
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Estado</p>
+                        @if (Model.UserDetails.LockoutEnd.HasValue && Model.UserDetails.LockoutEnd.Value > DateTimeOffset.Now)
+                        {
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                                <i class="fas fa-lock"></i> Bloqueado
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                <i class="fas fa-check-circle"></i> Ativo
+                            </span>
+                        }
+                    </div>
+                    @if (Model.UserDetails.AccessFailedCount > 0)
+                    {
+                        <div class="text-center">
+                            <p class="text-xs text-gray-500 mb-1">Falhas</p>
+                            <span class="px-2 py-1 text-xs font-bold rounded-full bg-orange-100 text-orange-700">
+                                @Model.UserDetails.AccessFailedCount
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="max-w-4xl">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-bold text-gray-900">
+                        <i class="fas fa-edit text-primary mr-2"></i>
+                        Editar Dados
+                    </h2>
+                </div>
+
+                <!-- Form -->
+                <form method="post" class="p-6 space-y-6">
+                    <div asp-validation-summary="ModelOnly" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"></div>
+
+                    <!-- Email -->
+                    <div>
+                        <label asp-for="Input.Email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Email <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-gray-400"></i>
+                            </div>
+                            <input asp-for="Input.Email" 
+                                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="utilizador@empresa.pt">
+                        </div>
+                        <span asp-validation-for="Input.Email" class="text-red-500 text-xs mt-1"></span>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="space-y-3">
+                        <!-- Email Confirmed -->
+                        <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                            <input asp-for="Input.EmailConfirmed" 
+                                   class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <label asp-for="Input.EmailConfirmed" class="ml-3 flex-1 cursor-pointer">
+                                <span class="text-sm font-medium text-gray-900">Email confirmado</span>
+                                <p class="text-xs text-gray-500">Marque se o utilizador confirmou o email</p>
+                            </label>
+                        </div>
+
+                        <!-- Lockout Enabled -->
+                        <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                            <input asp-for="Input.LockoutEnabled" 
+                                   class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <label asp-for="Input.LockoutEnabled" class="ml-3 flex-1 cursor-pointer">
+                                <span class="text-sm font-medium text-gray-900">Permitir bloqueio</span>
+                                <p class="text-xs text-gray-500">Se desmarcado, o utilizador nunca será bloqueado</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Roles -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Roles <span class="text-gray-500">(opcional)</span>
+                        </label>
+                        
+                        @if (Model.AvailableRoles.Count == 0)
+                        {
+                            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p class="text-sm text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    Nenhuma role disponível no sistema
+                                </p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="space-y-2">
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    <label for="role-@role.Name" class="flex items-center p-3 border @(role.IsSelected ? "border-primary bg-purple-50" : "border-gray-200") rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                                        <input type="checkbox" 
+                                               name="Input.SelectedRoles" 
+                                               value="@role.Name"
+                                               id="role-@role.Name"
+                                               checked="@role.IsSelected"
+                                               class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                                        <div class="ml-3 flex-1">
+                                            <div class="flex items-center">
+                                                <span class="text-sm font-medium text-gray-900">@role.Name</span>
+                                                @if (role.IsSelected)
+                                                {
+                                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                                        <i class="fas fa-check"></i>
+                                                    </span>
+                                                }
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-0.5">@role.Description</p>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="border-t border-gray-200 my-6"></div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-between">
+                        <a href="/Admin/Users"
+                           class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-times mr-2"></i>Cancelar
+                        </a>
+                        
+                        <button type="submit" 
+                                class="px-8 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+                            <i class="fas fa-save mr-2"></i>Guardar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Warning Card -->
+            <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">Atenção</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>A password não pode ser alterada aqui (usar funcionalidade específica)</li>
+                                <li>Alterar roles afeta as permissões do utilizador imediatamente</li>
+                                <li>Desmarcar "Permitir bloqueio" remove bloqueios existentes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

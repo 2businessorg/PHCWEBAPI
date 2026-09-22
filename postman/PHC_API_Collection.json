@@ -1,0 +1,971 @@
+{
+  "info": {
+    "_postman_id": "a22b90f6-509c-45de-8758-812adf125f20",
+    "name": "PHC API",
+    "description": "PHC API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "11693594"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "/auth/users/admin",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"2badmin\",\r\n    \"email\": \"admin@example.com\",\r\n    \"password\": \"Vencer198969!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/users/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "users",
+                "admin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/auth/users/{username}/roles/{role}",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAcessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users/2bMasterP/roles/ApiUser",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "users",
+                "2bMasterP",
+                "roles",
+                "ApiUser"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"2bMasterP\",\r\n    \"password\": \"WS123@@Business2\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/loginAdmin",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"2badmin\",\r\n    \"password\": \"Vencer198969!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/Auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/registerAppUser",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAcessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"2bCFME14\",\r\n    \"email\": \"2bMasterP@2bMasterP.com\",\r\n    \"password\": \"WS123@@CFMBusiness2\",\r\n    \"appLicenseStamp\": \"IM26041576016,674037572\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/registerAppUser",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "registerAppUser"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "/clients",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"no\": 0,\r\n    \"estab\": 0,\r\n    \"nome\": \"string\",\r\n    \"ncont\": \"12333\",\r\n    \"telefone\": \"string\",\r\n    \"morada\": \"string\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/clients/bulk",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [\r\n    {\r\n      \"no\": 9,\r\n      \"estab\": 1,\r\n      \"nome\": \"string\",\r\n      \"ncont\": \"string\",\r\n      \"telefone\": \"string\",\r\n      \"morada\": \"string\"\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clients",
+                "bulk"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/clients/no",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clients/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clients",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/clients",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clients?pageSize=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dossiers",
+      "item": [
+        {
+          "name": "/dossiers min",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"docTypeId\": 45,\n    \"entityId\": 2,\n    \"lines\": [\n        {\n            \"productCode\": \"P1\",\n            \"quantity\": 6\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/dossiers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/dossiers/ndos/obrano/boano",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/2/4/2025",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "2",
+                "4",
+                "2025"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/dossiers/types",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "types"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/dossiers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers?page=1&pageSze=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSze",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /clients/bulk",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJqdGkiOiJiZDQ2Njc4NC0xOTQ4LTQzYzQtYjAxZi0xZmUyOGM0ZThmZGYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbmlzdHJhdG9yIiwiZXhwIjoxNzc1MTQ4MTg2LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcyOTgiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjcyOTgifQ.myQ63RFwPBopFFeiQelSMEeZ-HH7CLStqO6fj6L8RCw",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [\r\n    {\r\n      \"no\": 9,\r\n      \"estab\": 1,\r\n      \"nome\": \"string\",\r\n      \"ncont\": \"string\",\r\n      \"telefone\": \"string\",\r\n      \"morada\": \"string\"\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clients",
+                "bulk"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "/invoices min",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"docTypeId\": 21,\n    \"clientId\": 2,\n    \"lines\": [\n        {\n            \"productCode\": \"S1\",\n            \"quantity\": 1,\n            \"unitPrice\": 55.00\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/invoices/docTypeId/invoiceNumber/year",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/21/8/2026",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "21",
+                "8",
+                "2026"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/invoices",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices?page=1&pageSize=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PHC WEB",
+      "item": [
+        {
+          "name": "Insert BO",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "http://www.phc.pt/RunCode",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n              xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n              xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Body>\n    <RunCode xmlns=\"http://www.phc.pt/\">\n      <userName>isac.munguambe</userName>\n      <password>Murd3rrr</password>\n      <code>insertBoAPI</code>\n      <parameter><val>{\"Ndos\":45,\"No\":2,\"Boano\":null,\"Estab\":null,\"Nome\":null,\"Data\":null,\"Moeda\":null,\"LstBi\":[{\"Ref\":\"P1\",\"Qtt\":6.0,\"Design\":null,\"PrecoUnitario\":null,\"TabIva\":null,\"IvaIncl\":null}]}</val></parameter>\n    </RunCode>\n  </soap:Body>\n</soap:Envelope>",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://tecnica.mz.2business-apps.com:444/tecnica/2B/IntranetMaster/ws/wscript.asmx",
+              "protocol": "https",
+              "host": [
+                "tecnica",
+                "mz",
+                "2business-apps",
+                "com"
+              ],
+              "port": "444",
+              "path": [
+                "tecnica",
+                "2B",
+                "IntranetMaster",
+                "ws",
+                "wscript.asmx"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Insert FT",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "http://www.phc.pt/RunCode",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n              xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n              xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Body>\n    <RunCode xmlns=\"http://www.phc.pt/\">\n      <userName>isac.munguambe</userName>\n      <password>Murd3rrr</password>\n      <code>insertFtAPI</code>\n      <parameter><val>{\"ndoc\":21,\"no\":2,\"ftano\":null,\"estab\":null,\"nome\":null,\"data\":null,\"moeda\":null,\"lstFi\":[{\"ref\":\"S1\",\"qtt\":3.0,\"design\":null,\"precoVenda\":null,\"tabIva\":null,\"ivaIncl\":null}]}</val></parameter>\n    </RunCode>\n  </soap:Body>\n</soap:Envelope>",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://tecnica.mz.2business-apps.com:444/tecnica/2B/IntranetMaster/ws/wscript.asmx",
+              "protocol": "https",
+              "host": [
+                "tecnica",
+                "mz",
+                "2business-apps",
+                "com"
+              ],
+              "port": "444",
+              "path": [
+                "tecnica",
+                "2B",
+                "IntranetMaster",
+                "ws",
+                "wscript.asmx"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stocks",
+      "item": [
+        {
+          "name": "Armazem",
+          "item": [
+            {
+              "name": "/stocks/warehouses",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/stocks/warehouses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "stocks",
+                    "warehouses"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "/stocks/{reference}/warehouses",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/stocks/{{referencia}}/warehouses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "stocks",
+                    "{{referencia}}",
+                    "warehouses"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Lotes",
+          "item": [
+            {
+              "name": "/stocks/batches",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/stocks/batches",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "stocks",
+                    "batches"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "/stocks/{reference}/batches",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/stocks/{{referencia}}/batches",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "stocks",
+                    "{{referencia}}",
+                    "batches"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "/stocks",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/stocks/{reference}",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"Descrição Atualizada\",\n    \"prices\": [\n        {\n            \"table\": 1,\n            \"value\": 1300.00,\n            \"isTaxIncluded\": false\n        },\n        {\n            \"table\": 2,\n            \"value\": 1250.00,\n            \"isTaxIncluded\": true\n        }\n    ],\n    \"observations\": \"Preço ajustado em Abril\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/stocks/{{referencia}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "{{referencia}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/stocks/{reference}",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/{{referencia}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "{{referencia}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/stocks",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reference\": \"ART-001\",\n    \"description\": \"Artigo Premium\",\n    \"isService\": false,\n    \"prices\": [\n        {\n            \"table\": 1,\n            \"value\": 1250.00,\n            \"isTaxIncluded\": true\n        },\n        {\n            \"table\": 2,\n            \"value\": 1200.00,\n            \"isTaxIncluded\": true\n        },\n        {\n            \"table\": 3,\n            \"value\": 1200.00,\n            \"isTaxIncluded\": true\n        },\n        {\n            \"table\": 4,\n            \"value\": 1200.00,\n            \"isTaxIncluded\": true\n        },\n        {\n            \"table\": 5,\n            \"value\": 1200.00,\n            \"isTaxIncluded\": true\n        }\n    ],\n    \"taxTableId\": 1,\n    \"familyRef\": \"FAM001\",\n    \"observations\": \"Novo artigo em stock\",\n    \"isInactive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/stocks/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tables",
+      "item": [
+        {
+          "name": "/tables/moedas",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:7298/api/tables/moedas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "7298",
+              "path": [
+                "api",
+                "tables",
+                "moedas"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://tecnica.mz.2business-apps.com:444/tecnica/2B/PHCAPIWS/api",
+      "disabled": true
+    },
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "adminAcessToken",
+      "value": ""
+    },
+    {
+      "key": "username",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "referencia",
+      "value": "P12"
+    }
+  ]
+}

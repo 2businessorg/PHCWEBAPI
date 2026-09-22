@@ -1,0 +1,9 @@
+$kind: http-request
+name: /currencies/{moeda}
+url: "{{baseUrl}}/currencies/KW"
+method: DELETE
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 2000

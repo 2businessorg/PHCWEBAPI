@@ -1,0 +1,47 @@
+$kind: http-request
+name: /stocks
+description: Lista todos os stocks
+url: "{{baseUrl}}/stocks/"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "reference": "ART-001",
+        "description": "Artigo Premium",
+        "isService": false,
+        "prices": [
+            {
+                "table": 1,
+                "value": 1250.00,
+                "isTaxIncluded": true
+            },
+            {
+                "table": 2,
+                "value": 1200.00,
+                "isTaxIncluded": true
+            },
+            {
+                "table": 3,
+                "value": 1200.00,
+                "isTaxIncluded": true
+            },
+            {
+                "table": 4,
+                "value": 1200.00,
+                "isTaxIncluded": true
+            },
+            {
+                "table": 5,
+                "value": 1200.00,
+                "isTaxIncluded": true
+            }
+        ],
+        "taxTableId": 1,
+        "familyRef": "FAM001",
+        "observations": "Novo artigo em stock",
+        "isInactive": false
+    }
+auth:
+  type: noauth
+order: 3836

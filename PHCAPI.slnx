@@ -1,0 +1,114 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Admin.UI/Admin.UI.csproj" />
+    <Project Path="src/PHCAPI.Host/PHCAPI.Host.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Audit/">
+    <Project Path="src/Modules/Audit/Audit.Application/Audit.Application.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Domain/Audit.Domain.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Infrastructure/Audit.Infrastructure.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Presentation/Audit.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/" />
+  <Folder Name="/src/Modules/Gestao/Clients/">
+    <Project Path="src/Modules/Gestao/Clients/Clients.Application/Clients.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Clients/Clients.Domain/Clients.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Clients/Clients.Infrastructure/Clients.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Clients/Clients.Presentation/Clients.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/Advances/">
+    <Project Path="src/Modules/Gestao/Advances/Advances.Application/Advances.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Advances/Advances.Domain/Advances.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Advances/Advances.Infrastructure/Advances.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Advances/Advances.Presentation/Advances.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/Dossiers/">
+    <Project Path="src/Modules/Gestao/Dossiers/Dossiers.Application/Dossiers.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Dossiers/Dossiers.Domain/Dossiers.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Dossiers/Dossiers.Infrastructure/Dossiers.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Dossiers/Dossiers.Presentation/Dossiers.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/Invoices/">
+    <Project Path="src/Modules/Gestao/Invoices/Invoices.Application/Invoices.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Invoices/Invoices.Domain/Invoices.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Invoices/Invoices.Infrastructure/Invoices.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Invoices/Invoices.Presentation/Invoices.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/Receipts/">
+    <Project Path="src/Modules/Gestao/Receipts/Receipts.Application/Receipts.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Receipts/Receipts.Domain/Receipts.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Receipts/Receipts.Infrastructure/Receipts.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Receipts/Receipts.Presentation/Receipts.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/Providers/">
+    <Project Path="src/Modules/Gestao/Providers/Providers.Application/Providers.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Providers/Providers.Domain/Providers.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Providers/Providers.Infrastructure/Providers.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Providers/Providers.Presentation/Providers.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Gestao/Stocks/">
+    <Project Path="src/Modules/Gestao/Stocks/Stocks.Application/Stocks.Application.csproj" />
+    <Project Path="src/Modules/Gestao/Stocks/Stocks.Domain/Stocks.Domain.csproj" />
+    <Project Path="src/Modules/Gestao/Stocks/Stocks.Infrastructure/Stocks.Infrastructure.csproj" />
+    <Project Path="src/Modules/Gestao/Stocks/Stocks.Presentation/Stocks.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/TabelasGerais/">
+    <Project Path="src/Modules/TabelasGerais/Parameters/Parameters.Application/Parameters.Application.csproj" />
+    <Project Path="src/Modules/TabelasGerais/Parameters/Parameters.Domain/Parameters.Domain.csproj" />
+    <Project Path="src/Modules/TabelasGerais/Parameters/Parameters.Infrastructure/Parameters.Infrastructure.csproj" />
+    <Project Path="src/Modules/TabelasGerais/Parameters/Parameters.Presentation/Parameters.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/TabelasGerais/Currencies/">
+    <Project Path="src/Modules/TabelasGerais/Currencies/Currencies.Application/Currencies.Application.csproj" />
+    <Project Path="src/Modules/TabelasGerais/Currencies/Currencies.Domain/Currencies.Domain.csproj" />
+    <Project Path="src/Modules/TabelasGerais/Currencies/Currencies.Infrastructure/Currencies.Infrastructure.csproj" />
+    <Project Path="src/Modules/TabelasGerais/Currencies/Currencies.Presentation/Currencies.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Auth/">
+    <Project Path="src/Modules/Auth/Auth.Application/Auth.Application.csproj" />
+    <Project Path="src/Modules/Auth/Auth.Domain/Auth.Domain.csproj" />
+    <Project Path="src/Modules/Auth/Auth.Infrastructure/Auth.Infrastructure.csproj" />
+    <Project Path="src/Modules/Auth/Auth.Presentation/Auth.Presentation.csproj" />
+    <Project Path="src/Modules/Auth/Auth.UI/Auth.UI.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/TabelasGerais/VatTaxes/">
+    <Project Path="src/Modules/TabelasGerais/VatTaxes/VatTaxes.Application/VatTaxes.Application.csproj" />
+    <Project Path="src/Modules/TabelasGerais/VatTaxes/VatTaxes.Domain/VatTaxes.Domain.csproj" />
+    <Project Path="src/Modules/TabelasGerais/VatTaxes/VatTaxes.Infrastructure/VatTaxes.Infrastructure.csproj" />
+    <Project Path="src/Modules/TabelasGerais/VatTaxes/VatTaxes.Presentation/VatTaxes.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Shared.Abstractions/Shared.Abstractions.csproj" />
+    <Project Path="src/Shared/Shared.Application/Shared.Application.csproj" />
+    <Project Path="src/Shared/Shared.Infrastructure/Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared/Shared.Kernel/Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Parameters.Application.Tests/Parameters.Application.Tests.csproj" />
+    <Project Path="tests/Dossiers.Application.Tests/Dossiers.Application.Tests.csproj" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/Architecture.md" />
+    <File Path="docs/COMO-EXECUTAR-PHCAPI.md" />
+    <File Path="docs/Standard-Modules-Management-GUIDE.md" />
+    <File Path="docs/modulos/modulo Dossiers.md" />
+    <File Path="docs/modulos/modulo Faturas.md" />
+    <File Path="docs/modulos/modulo Stocks.md" />
+    <File Path="docs/modulos/modulo VatTaxes.md" />
+  </Folder>
+  <Folder Name="/docs/patterns/">
+    <File Path="docs/patterns/BehaviorPattern.md" />
+    <File Path="docs/patterns/CommandPattern.md" />
+    <File Path="docs/patterns/ControllerPattern.md" />
+    <File Path="docs/patterns/DependencyInjectionPattern.md" />
+    <File Path="docs/patterns/DTOPattern.md" />
+    <File Path="docs/patterns/EntityPattern.md" />
+    <File Path="docs/patterns/InfrastructurePattern.md" />
+    <File Path="docs/patterns/MappingPattern.md" />
+    <File Path="docs/patterns/QueryPattern.md" />
+    <File Path="docs/patterns/RepositoryPattern.md" />
+    <File Path="docs/patterns/TestingPattern.md" />
+    <File Path="docs/patterns/ValidatorPattern.md" />
+  </Folder>
+</Solution>

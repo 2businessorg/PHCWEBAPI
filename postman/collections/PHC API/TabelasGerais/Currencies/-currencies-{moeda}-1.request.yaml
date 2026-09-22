@@ -1,0 +1,13 @@
+$kind: http-request
+name: /currencies/{moeda}
+url: "{{baseUrl}}/currencies/KW"
+method: PATCH
+body:
+  type: json
+  content: "{\r\n  \"pais\": \"Angdasda22\"\r\n}"
+auth:
+  credentials:
+    - key: token
+      value: "{{accessToken}}"
+  type: bearer
+order: 6000

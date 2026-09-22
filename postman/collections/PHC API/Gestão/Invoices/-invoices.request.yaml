@@ -1,0 +1,19 @@
+$kind: http-request
+name: /invoices
+url: "{{baseUrl}}/invoices?page=1&pageSize=5"
+method: GET
+queryParams:
+  - key: page
+    value: "1"
+    $type: ""
+  - key: pageSize
+    value: "5"
+    $type: ""
+body:
+  type: json
+  content: ""
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 3078391554115117

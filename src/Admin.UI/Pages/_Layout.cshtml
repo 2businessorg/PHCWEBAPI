@@ -1,0 +1,240 @@
+@using Microsoft.Extensions.Options
+@using Admin.UI.Settings
+@inject IOptions<AdminUISettings> AdminSettings
+@{
+    var settings = AdminSettings.Value;
+    var colors = settings.Colors;
+}
+<!DOCTYPE html>
+<html lang="pt" class="h-full bg-gray-50">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Panel</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Clean Minimal Styles -->
+    <style>
+        :root {
+            --color-primary: @colors.Primary;
+            --color-primary-hover: @colors.PrimaryHover;
+            --color-primary-light: @colors.PrimaryLight;
+            --color-success: @colors.Success;
+            --color-error: @colors.Error;
+            --color-warning: @colors.Warning;
+            --color-info: @colors.Info;
+            --color-text-primary: @colors.TextPrimary;
+            --color-text-secondary: @colors.TextSecondary;
+            --color-sidebar-bg: @colors.SidebarBackground;
+            --color-sidebar-text: @colors.SidebarText;
+            --color-sidebar-active: @colors.SidebarActive;
+            --color-sidebar-active-text: @colors.SidebarActiveText;
+        }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .animate-slide-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .sidebar-link {
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        
+        .btn-primary {
+            background: var(--color-primary);
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+            box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+        }
+        
+        .table-hover:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Simplify scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #dadce0;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bdc1c6;
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '@colors.Primary',
+                        secondary: '@colors.TextSecondary',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-white">
+    <div class="min-h-full flex">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <!-- Logo -->
+            <div class="flex items-center justify-center px-6 h-16 border-b border-gray-200">
+                <img src="@settings.LogoUrl" 
+                     alt="@settings.LogoAlt" 
+                     style="max-width: @(settings.LogoWidth)px; max-height: @(settings.LogoHeight)px; width: auto; height: auto;"
+                     class="object-contain" />
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                @if (User.IsInRole("Administrator"))
+                {
+                    <a href="/Admin/Users" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-users w-5 text-gray-400"></i>
+                        <span class="ml-3">Utilizadores</span>
+                    </a>
+                    
+                    <a href="/Admin/Users/Create" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-user-plus w-5 text-gray-400"></i>
+                        <span class="ml-3">Criar Utilizador</span>
+                    </a>
+                    
+                    <a href="/Admin/Roles" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-shield-alt w-5 text-gray-400"></i>
+                        <span class="ml-3">Roles</span>
+                    </a>
+                    
+                    <div class="border-t border-gray-200 my-3"></div>
+                    
+                    <a href="/Admin/Providers" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-plug w-5 text-gray-400"></i>
+                        <span class="ml-3">Providers</span>
+                    </a>
+                    
+                    <div class="border-t border-gray-200 my-3"></div>
+                    
+                    <a href="/Admin/Logs" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-file-alt w-5 text-gray-400"></i>
+                        <span class="ml-3">Logs de Auditoria</span>
+                    </a>
+                    
+                    <div class="border-t border-gray-200 my-3"></div>
+                }
+                else
+                {
+                    <!-- Usuários não-admin veem apenas suas permissões -->
+                    <div class="px-3 py-8 text-center">
+                        <i class="fas fa-shield-alt text-gray-300 text-3xl mb-3"></i>
+                        <p class="text-sm text-gray-500">Sem permissões de administração</p>
+                    </div>
+                }
+               
+            </nav>
+            
+            <!-- User Info -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center mb-3">
+                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-medium">
+                        @User.Identity?.Name?.Substring(0, 1).ToUpper()
+                    </div>
+                    <div class="ml-3 flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">@User.Identity?.Name</p>
+                        <p class="text-xs text-gray-500">Administrador</p>
+                    </div>
+                </div>
+                <a href="/Admin/Account/Logout" class="flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 w-full">
+                    <i class="fas fa-sign-out-alt mr-2 text-gray-400"></i>
+                    Sair
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <header class="bg-white border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900">@ViewData["Title"]</h1>
+                        @if (ViewData["Subtitle"] != null)
+                        {
+                            <p class="mt-1 text-sm text-gray-600">@ViewData["Subtitle"]</p>
+                        }
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <!-- Time -->
+                        <div class="text-sm text-gray-600 flex items-center">
+                            <i class="far fa-clock mr-2 text-gray-400"></i>
+                            <span id="currentTime"></span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto bg-gray-50">
+                <div class="p-6 animate-slide-in">
+                    @RenderBody()
+                </div>
+            </main>
+            
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 px-6 py-3">
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <p>&copy; @DateTime.Now.Year PHC Admin Panel</p>
+                    <p>v1.0.0</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    @await RenderSectionAsync("Scripts", required: false)
+    
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-PT', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const element = document.getElementById('currentTime');
+            if (element) element.textContent = timeString;
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+$kind: http-request
+name: /auth/users/{username}/roles/{role}
+url: "{{baseUrl}}/auth/users/2bMasterP/roles/ApiUser"
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{adminAcessToken}}"
+order: 2009

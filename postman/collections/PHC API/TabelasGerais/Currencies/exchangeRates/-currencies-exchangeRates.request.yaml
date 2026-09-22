@@ -1,0 +1,9 @@
+$kind: http-request
+name: /currencies/exchangeRates
+url: "{{baseUrl}}/currencies/exchangeRates"
+method: GET
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 2000

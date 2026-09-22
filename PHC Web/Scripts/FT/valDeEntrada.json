@@ -1,0 +1,30 @@
+{
+    "ndoc": 1,
+    "no": 2,
+    "ftano": null,
+    "estab": null,
+    "nome": null,
+    "data": null,
+    "moeda": null,
+    "AddFieldsByTable": {
+        "ft": {
+            "vendnm": "Persinaaa",
+            "vendedor": 1
+        }
+    },
+    "lstFi": [
+        {
+            "ref": "P1",
+            "qtt": 6.0,
+            "design": null,
+            "precoVenda": null,
+            "tabIva": null,
+            "ivaIncl": null,
+            "AddFieldsByTable": {
+                "fi": {
+                    "u_pcprcss": 2.0
+                }
+            }
+        }
+    ]
+}

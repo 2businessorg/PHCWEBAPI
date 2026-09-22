@@ -1,0 +1,10 @@
+$kind: http-request
+name: /login
+url: "{{baseUrl}}/Auth/login"
+method: POST
+body:
+  type: json
+  content: '{ "username": "2bMasterP", "password": ""}asdasdasd'
+auth:
+  type: noauth
+order: 5000

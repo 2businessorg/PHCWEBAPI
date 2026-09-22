@@ -1,0 +1,234 @@
+@page "/Admin/Users"
+@model Admin.UI.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "Gestão de Utilizadores";
+    ViewData["Subtitle"] = "Consulte e gerencie todos os utilizadores do sistema";
+}
+
+<!-- Success Message -->
+@if (Model.SuccessMessage != null)
+{
+    <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-slide-in">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-600 text-xl mr-3"></i>
+            <p class="text-sm font-medium text-green-800">@Model.SuccessMessage</p>
+        </div>
+    </div>
+}
+
+<!-- Header Actions -->
+<div class="flex items-center justify-between mb-6">
+    <div class="flex items-center space-x-4">
+        <div class="px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+            <span class="text-sm font-medium text-gray-600">Total: </span>
+            <span class="text-lg font-bold text-primary">@Model.Users.Count</span>
+        </div>
+    </div>
+    
+    <div class="flex space-x-3">
+        <a href="/Admin/Users" class="px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-sync-alt mr-2"></i>Actualizar
+        </a>
+        <a href="/Admin/Users/Create" class="px-6 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+            <i class="fas fa-plus mr-2"></i>Novo Utilizador
+        </a>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    @if (Model.Users.Count == 0)
+    {
+        <div class="p-12 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <i class="fas fa-users text-3xl text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum utilizador encontrado</h3>
+            <p class="text-gray-500 mb-6">Comece por criar o primeiro utilizador do sistema.</p>
+            <a href="/Admin/Users/Create" class="inline-flex items-center px-6 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+                <i class="fas fa-plus mr-2"></i>Criar Primeiro Utilizador
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Utilizador
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Email
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Roles
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Estado
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Email Confirmado
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 flex-shrink-0">
+                                        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm">
+                                            @user.UserName.Substring(0, 1).ToUpper()
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-bold text-gray-900">@user.UserName</div>
+                                        @if (user.AccessFailedCount > 0)
+                                        {
+                                            <div class="text-xs text-orange-600">
+                                                <i class="fas fa-exclamation-triangle"></i> @user.AccessFailedCount tentativas falhadas
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">@user.Email</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-1">
+                                    @if (user.Roles.Count > 0)
+                                    {
+                                        @foreach (var role in user.Roles)
+                                        {
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700">
+                                                <i class="fas fa-shield-alt"></i> @role
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-gray-400">Sem roles</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.Now)
+                                {
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                                        <i class="fas fa-lock"></i> Bloqueado
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                        <i class="fas fa-check-circle"></i> Ativo
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-left text-sm">
+                                @if (user.EmailConfirmed)
+                                {
+                                    <span class="text-green-600 font-medium">
+                                        <i class="fas fa-check-circle"></i> Sim
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-orange-600 font-medium">
+                                        <i class="fas fa-times-circle"></i> Não
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex items-center justify-end space-x-3">
+                                    @if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.Now)
+                                    {
+                                        <form method="post" class="inline" onsubmit="return confirmUnlock('@user.UserName');">
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            <button type="submit" 
+                                                    asp-page-handler="Unlock"
+                                                    class="text-green-600 hover:text-green-800 transition p-1.5 hover:bg-green-50 rounded"
+                                                    title="Desbloquear utilizador">
+                                                <i class="fas fa-unlock-alt"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    <a href="/Admin/Users/Edit/@user.Id" 
+                                       class="text-blue-600 hover:text-blue-800 transition p-1.5 hover:bg-blue-50 rounded"
+                                       title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Footer with Stats -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        <span class="text-gray-600">
+                            Ativos: <span class="font-bold text-gray-900">@Model.Users.Count(u => !u.LockoutEnd.HasValue || u.LockoutEnd.Value <= DateTimeOffset.Now)</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        <span class="text-gray-600">
+                            Bloqueados: <span class="font-bold text-gray-900">@Model.Users.Count(u => u.LockoutEnd.HasValue && u.LockoutEnd.Value > DateTimeOffset.Now)</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                        <span class="text-gray-600">
+                            Com Roles: <span class="font-bold text-gray-900">@Model.Users.Count(u => u.Roles.Any())</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Última actualização: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+function confirmUnlock(username) {
+    return confirm('Deseja realmente desbloquear o utilizador "' + username + '"?\n\nO contador de tentativas falhadas será resetado.');
+}
+</script>
+
+<!-- Info Card -->
+@if (Model.Users.Any(u => !u.EmailConfirmed))
+{
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-900">Utilizadores com Email Não Confirmado</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <p>
+                        Existem @Model.Users.Count(u => !u.EmailConfirmed) utilizador(es) com email não confirmado.
+                        Considere implementar um sistema de confirmação de email para maior segurança.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,35 @@
+@*
+    Empty State Component
+    Usage with ViewData:
+        ViewData["Icon"] = "fa-users";
+        ViewData["Title"] = "Nenhum utilizador encontrado";
+        ViewData["Message"] = "Comece por criar...";
+        ViewData["ActionUrl"] = "/Admin/Users/Create";
+        ViewData["ActionText"] = "Criar Utilizador";
+*@
+
+@{
+    var icon = ViewData["Icon"]?.ToString() ?? "fa-inbox";
+    var title = ViewData["Title"]?.ToString() ?? "Nenhum item encontrado";
+    var message = ViewData["Message"]?.ToString() ?? "";
+    var actionUrl = ViewData["ActionUrl"]?.ToString();
+    var actionText = ViewData["ActionText"]?.ToString();
+    var actionIcon = ViewData["ActionIcon"]?.ToString() ?? "fa-plus";
+}
+
+<div class="p-12 text-center">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+        <i class="fas @icon text-3xl text-gray-400"></i>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 mb-2">@title</h3>
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <p class="text-gray-500 mb-6">@message</p>
+    }
+    @if (!string.IsNullOrEmpty(actionUrl) && !string.IsNullOrEmpty(actionText))
+    {
+        <a href="@actionUrl" class="inline-flex items-center px-6 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+            <i class="fas @actionIcon mr-2"></i>@actionText
+        </a>
+    }
+</div>

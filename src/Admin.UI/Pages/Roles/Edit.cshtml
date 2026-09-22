@@ -1,0 +1,167 @@
+@page "/Admin/Roles/Edit/{id}"
+@model Admin.UI.Pages.Roles.EditModel
+@{
+    ViewData["Title"] = "Editar Role";
+    ViewData["Subtitle"] = $"Editar dados de {Model.RoleDetails.Name}";
+}
+
+<!-- Breadcrumb -->
+<nav class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-gray-600">
+        <li><a href="/Admin/Roles" class="hover:text-primary transition"><i class="fas fa-shield-alt mr-1"></i>Roles</a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li class="text-gray-900 font-medium">Editar</li>
+    </ol>
+</nav>
+
+<!-- Success/Error Messages -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 animate-slide-in">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-600 text-xl mr-3"></i>
+            <p class="text-sm font-medium text-green-800">@TempData["SuccessMessage"]</p>
+        </div>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 animate-slide-in">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-600 text-xl mr-3"></i>
+            <p class="text-sm font-medium text-red-800">@TempData["ErrorMessage"]</p>
+        </div>
+    </div>
+}
+
+<!-- System Role Warning -->
+@if (Model.RoleDetails.IsSystemRole)
+{
+    <div class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-lock text-blue-600 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-bold text-blue-900 mb-2">Role do Sistema</h3>
+                <p class="text-sm text-blue-700 mb-3">
+                    Esta é uma role do sistema e não pode ser editada. As roles do sistema são essenciais para o funcionamento da aplicação.
+                </p>
+                <a href="/Admin/Roles" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                    <i class="fas fa-arrow-left mr-2"></i>Voltar às Roles
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Role Info Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div class="p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white text-2xl">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-gray-900">@Model.RoleDetails.Name</h2>
+                    <p class="text-sm text-gray-500">Role personalizada</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Utilizadores</p>
+                        <span class="px-3 py-1 text-sm font-bold rounded-full bg-purple-100 text-purple-700">
+                            <i class="fas fa-users"></i> @Model.RoleDetails.UserCount
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="max-w-4xl">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <!-- Header -->
+            <div class="bg-primary p-6">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <i class="fas fa-edit mr-3"></i>
+                    Editar Dados da Role
+                </h2>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="p-6">
+                <div asp-validation-summary="All" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" style="display: none;"></div>
+
+                <div class="space-y-6">
+                    <!-- Warning -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-orange-600 text-lg mr-3 mt-0.5"></i>
+                            <div class="text-sm text-orange-800">
+                                <p class="font-medium mb-1">Atenção ao renomear roles</p>
+                                <p>Se renomear esta role, as permissões dos utilizadores associados permanecerão as mesmas, mas o nome será alterado em todos os locais.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Role Name -->
+                    <div>
+                        <label asp-for="Input.Name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nome da Role <span class="text-red-500">*</span>
+                        </label>
+                        <input asp-for="Input.Name" 
+                               class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                               placeholder="ContentEditor">
+                        <span asp-validation-for="Input.Name" class="text-red-500 text-sm mt-1"></span>
+                        <p class="mt-2 text-sm text-gray-500">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            Use PascalCase: ContentEditor, OrderManager, ReportViewer
+                        </p>
+                    </div>
+
+                    <!-- Users with this Role -->
+                    @if (Model.RoleDetails.Users.Any())
+                    {
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                                <i class="fas fa-users text-gray-600 mr-2"></i>
+                                Utilizadores com esta role (@Model.RoleDetails.UserCount)
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (var username in Model.RoleDetails.Users)
+                                {
+                                    <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                                        @username
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="border border-gray-200 rounded-lg p-4 text-center">
+                            <i class="fas fa-users text-gray-300 text-2xl mb-2"></i>
+                            <p class="text-sm text-gray-500">Nenhum utilizador com esta role</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+                    <a href="/Admin/Roles" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="px-6 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+                        <i class="fas fa-save mr-2"></i>Guardar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

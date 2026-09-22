@@ -1,0 +1,105 @@
+{
+  "codigo": 1,
+  "provedor": "TFR",
+  "environment": "Development",
+  "descricao": "Transnet Freight Rail - Development Environment",
+  "ativo": true,
+  "values": [
+    {
+      "operationCode": "GET_ALL_CONSIGNMENTS",
+      "chave": "Method",
+      "valor": "GET",
+      "encriptado": false,
+      "ordem": 1,
+      "ativo": true
+    },
+    {
+      "operationCode": "GET_ALL_CONSIGNMENTS",
+      "chave": "Url",
+      "valor": "http://online.transnetfreightrail.co.za/api/transnetOnlineAPI/tracktrace/cfmConsignments/all",
+      "encriptado": false,
+      "ordem": 2,
+      "ativo": true
+    },
+    {
+      "operationCode": "GET_ALL_CONSIGNMENTS",
+      "chave": "Port",
+      "valor": "8080",
+      "encriptado": false,
+      "ordem": 3,
+      "ativo": true
+    },
+    {
+      "operationCode": "GET_ALL_CONSIGNMENTS",
+      "chave": "ContentType",
+      "valor": "application/json",
+      "encriptado": false,
+      "ordem": 4,
+      "ativo": true
+    },
+    {
+      "operationCode": "GET_ALL_CONSIGNMENTS",
+      "chave": "Username",
+      "valor": "Sap3008",
+      "encriptado": false,
+      "ordem": 5,
+      "ativo": true
+    },
+    {
+      "operationCode": "GET_ALL_CONSIGNMENTS",
+      "chave": "Password",
+      "valor": "YOUR_PASSWORD",
+      "encriptado": true,
+      "ordem": 6,
+      "ativo": true
+    },
+    {
+      "operationCode": "AUTH",
+      "chave": "Method",
+      "valor": "POST",
+      "encriptado": false,
+      "ordem": 10,
+      "ativo": true
+    },
+    {
+      "operationCode": "AUTH",
+      "chave": "Url",
+      "valor": "http://online.transnetfreightrail.co.za/api/transnetOnlineAPI/authentication/portalauth",
+      "encriptado": false,
+      "ordem": 11,
+      "ativo": true
+    },
+    {
+      "operationCode": "AUTH",
+      "chave": "Port",
+      "valor": "8080",
+      "encriptado": false,
+      "ordem": 12,
+      "ativo": true
+    },
+    {
+      "operationCode": "AUTH",
+      "chave": "ContentType",
+      "valor": "application/json",
+      "encriptado": false,
+      "ordem": 13,
+      "ativo": true
+    },
+    {
+      "operationCode": "AUTH",
+      "chave": "Username",
+      "valor": "Sap3008",
+      "encriptado": false,
+      "ordem": 14,
+      "ativo": true
+    },
+    {
+      "operationCode": "AUTH",
+      "chave": "Password",
+      "valor": "YOUR_PASSWORD",
+      "encriptado": true,
+      "ordem": 15,
+      "ativo": true
+    }
+  ]
+}

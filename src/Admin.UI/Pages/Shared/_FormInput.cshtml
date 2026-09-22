@@ -1,0 +1,51 @@
+@*
+    Form Input Group Component - Enterprise Level
+    Provides consistent form input styling with validation support
+*@
+
+@{
+    var id = ViewData["Id"]?.ToString() ?? "input";
+    var name = ViewData["Name"]?.ToString() ?? id;
+    var label = ViewData["Label"]?.ToString() ?? "";
+    var placeholder = ViewData["Placeholder"]?.ToString() ?? "";
+    var type = ViewData["Type"]?.ToString() ?? "text";
+    var icon = ViewData["Icon"]?.ToString();
+    var required = ViewData["Required"] as bool? ?? false;
+    var helpText = ViewData["HelpText"]?.ToString();
+    var value = ViewData["Value"]?.ToString() ?? "";
+}
+
+<div class="form-group">
+    @if (!string.IsNullOrEmpty(label))
+    {
+        <label for="@id" class="block text-sm font-medium text-gray-700 mb-2">
+            @label
+            @if (required)
+            {
+                <span class="text-red-500">*</span>
+            }
+        </label>
+    }
+    
+    <div class="relative">
+        @if (!string.IsNullOrEmpty(icon))
+        {
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas @icon text-gray-400"></i>
+            </div>
+        }
+        
+        <input type="@type" 
+               id="@id" 
+               name="@name"
+               value="@value"
+               @(required ? "required" : "")
+               class="block w-full @(!string.IsNullOrEmpty(icon) ? "pl-10" : "pl-3") pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+               placeholder="@placeholder">
+    </div>
+    
+    @if (!string.IsNullOrEmpty(helpText))
+    {
+        <p class="mt-1 text-xs text-gray-500">@helpText</p>
+    }
+</div>

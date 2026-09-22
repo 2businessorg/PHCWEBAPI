@@ -1,0 +1,58 @@
+@*
+    Alert/Notification Component
+    Usage: <partial name="_Alerts" model="new AlertViewModel { Type = "success", Message = "..." }" />
+*@
+
+@{
+    var type = ViewData["Type"]?.ToString() ?? "info";
+    var message = ViewData["Message"]?.ToString() ?? string.Empty;
+    var icon = type switch
+    {
+        "success" => "fa-check-circle",
+        "error" => "fa-exclamation-circle",
+        "warning" => "fa-exclamation-triangle",
+        "info" => "fa-info-circle",
+        _ => "fa-info-circle"
+    };
+    var bgColor = type switch
+    {
+        "success" => "bg-green-50 border-green-200",
+        "error" => "bg-red-50 border-red-200",
+        "warning" => "bg-yellow-50 border-yellow-200",
+        "info" => "bg-blue-50 border-blue-200",
+        _ => "bg-gray-50 border-gray-200"
+    };
+    var textColor = type switch
+    {
+        "success" => "text-green-800",
+        "error" => "text-red-800",
+        "warning" => "text-yellow-800",
+        "info" => "text-blue-800",
+        _ => "text-gray-800"
+    };
+    var iconColor = type switch
+    {
+        "success" => "text-green-600",
+        "error" => "text-red-600",
+        "warning" => "text-yellow-600",
+        "info" => "text-blue-600",
+        _ => "text-gray-600"
+    };
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="mb-6 @bgColor border rounded-lg p-4 animate-slide-in" role="alert">
+        <div class="flex items-center">
+            <i class="fas @icon @iconColor text-xl mr-3"></i>
+            <div class="flex-1">
+                <p class="text-sm font-medium @textColor">@message</p>
+            </div>
+            <button type="button" 
+                    class="ml-3 text-gray-400 hover:text-gray-600 transition"
+                    onclick="this.closest('[role=alert]').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+}

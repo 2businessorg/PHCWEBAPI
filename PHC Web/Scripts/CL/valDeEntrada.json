@@ -1,0 +1,20 @@
+{
+  "id": 0,
+  "branch": 0,
+  "name": "Cliente Teste Lda.",
+  "nuit": "400123456",
+  "phone": "841234567",
+  "address": "Av. Eduardo Mondlane, 123 - Maputo",
+  "email": "geral@clienteteste.co.mz",
+  "inactive": false,
+  "createdBy": "PHCAPI",
+  "addFieldsByTable": {
+    "cl": {
+      "us_segmento": "PME",
+      "us_origem":   "API"
+    },
+    "cl2": {
+      "us_limcredito": 50000.00
+    }
+  }
+}

@@ -1,0 +1,34 @@
+$kind: http-request
+name: /clients/bulk
+url: "{{baseUrl}}/clients/bulk"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"items\": [\r
+
+    \    {\r
+
+    \      \"no\": 9,\r
+
+    \      \"estab\": 1,\r
+
+    \      \"nome\": \"string\",\r
+
+    \      \"ncont\": \"string\",\r
+
+    \      \"telefone\": \"string\",\r
+
+    \      \"morada\": \"string\"\r
+
+    \    }\r
+
+    \  ]\r
+
+    }"
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 5000

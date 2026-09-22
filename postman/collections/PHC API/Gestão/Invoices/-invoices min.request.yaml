@@ -1,0 +1,23 @@
+$kind: http-request
+name: /invoices min
+url: "{{baseUrl}}/invoices"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "docTypeId": 21,
+        "clientId": 2,
+        "lines": [
+            {
+                "productCode": "S1",
+                "quantity": 1,
+                "unitPrice": 55.00
+            }
+        ]
+    }
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 4406510564645833

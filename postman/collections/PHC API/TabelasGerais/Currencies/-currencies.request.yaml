@@ -1,0 +1,13 @@
+$kind: http-request
+name: /currencies
+url: "{{baseUrl}}/currencies?pageSize=5"
+method: GET
+queryParams:
+  - key: pageSize
+    value: "5"
+auth:
+  credentials:
+    - key: token
+      value: "{{accessToken}}"
+  type: bearer
+order: 3000

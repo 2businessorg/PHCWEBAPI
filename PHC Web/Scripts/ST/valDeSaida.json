@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "item": {
+    "reference": "ART-001",
+    "description": "Artigo de Teste",
+    "isService": false,
+    "prices": [
+      { "table": 1, "value": 1250.0, "isTaxIncluded": true },
+      { "table": 2, "value": 1200.0, "isTaxIncluded": false }
+    ],
+    "quantity": 0.0,
+    "taxTableId": 1,
+    "familyRef": "FAM001",
+    "familyName": "Família Geral",
+    "observations": "Artigo criado via API",
+    "isInactive": false,
+    "useBatches": false,
+    "addFields": null
+  }
+}

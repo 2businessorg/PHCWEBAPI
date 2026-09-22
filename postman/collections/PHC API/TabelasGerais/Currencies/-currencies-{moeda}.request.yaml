@@ -1,0 +1,10 @@
+$kind: http-request
+name: /currencies/{moeda}
+url: "{{baseUrl}}/currencies/Mt"
+method: GET
+auth:
+  credentials:
+    - key: token
+      value: "{{accessToken}}"
+  type: bearer
+order: 5000

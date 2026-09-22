@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "clientId": 2,
+  "bankAccountId": 1,
+  "ndoc": 1,
+  "stamp": "abc123def456ghi789jkl012m",
+  "rno": 5,
+  "rdano": 2026,
+  "total": 500.0,
+  "addFields": null
+}

@@ -1,0 +1,222 @@
+@page "/Admin/Providers/Edit"
+@model Admin.UI.Pages.Providers.EditModel
+@{
+    ViewData["Title"] = "Editar Provider";
+    ViewData["Subtitle"] = $"Edite o provider {Model.Input.Provedor}";
+}
+
+<div class="max-w-6xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="/Admin/Providers" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Voltar para Providers
+        </a>
+    </div>
+
+    <!-- Error Summary -->
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-circle text-red-600 text-xl mr-3 mt-0.5"></i>
+                <div>
+                    <h3 class="text-sm font-medium text-red-800 mb-2">Corrija os seguintes erros:</h3>
+                    <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form method="post" class="space-y-6">
+        <input type="hidden" asp-for="Stamp" />
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <i class="fas fa-info-circle text-primary mr-2"></i>
+                Informações Básicas
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="Input.Codigo" class="block text-sm font-medium text-gray-700 mb-2">
+                        Código <span class="text-red-500">*</span>
+                    </label>
+                    <input asp-for="Input.Codigo" type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required />
+                    <span asp-validation-for="Input.Codigo" class="text-red-600 text-xs mt-1"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Provedor" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Provider <span class="text-red-500">*</span>
+                    </label>
+                    <input asp-for="Input.Provedor" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required />
+                    <span asp-validation-for="Input.Provedor" class="text-red-600 text-xs mt-1"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Environment" class="block text-sm font-medium text-gray-700 mb-2">
+                        Environment <span class="text-red-500">*</span>
+                    </label>
+                    <select asp-for="Input.Environment" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        <option value="">Selecione...</option>
+                        <option value="Development">Development</option>
+                        <option value="Staging">Staging</option>
+                        <option value="Production">Production</option>
+                    </select>
+                    <span asp-validation-for="Input.Environment" class="text-red-600 text-xs mt-1"></span>
+                </div>
+
+                <div>
+                    <label class="flex items-center space-x-3 pt-8">
+                        <input asp-for="Input.Ativo" type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary" />
+                        <span class="text-sm font-medium text-gray-700">Provider Ativo</span>
+                    </label>
+                    <span asp-validation-for="Input.Ativo" class="text-red-600 text-xs mt-1"></span>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label asp-for="Input.Descricao" class="block text-sm font-medium text-gray-700 mb-2">
+                        Descrição <span class="text-red-500">*</span>
+                    </label>
+                    <textarea asp-for="Input.Descricao" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required></textarea>
+                    <span asp-validation-for="Input.Descricao" class="text-red-600 text-xs mt-1"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Values -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-cogs text-primary mr-2"></i>
+                    Configurações (Values)
+                </h3>
+                <button type="button" onclick="addValueRow()" class="px-4 py-2 bg-primary text-white rounded-lg hover:shadow-md transition">
+                    <i class="fas fa-plus mr-2"></i>Adicionar Configuração
+                </button>
+            </div>
+
+            <div id="valuesContainer" class="space-y-4">
+                @for (int i = 0; i < Model.Input.Values.Count; i++)
+                {
+                    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50" id="value-row-@i">
+                        <div class="flex items-start justify-between mb-4">
+                            <h4 class="text-sm font-semibold text-gray-900">Configuração #@(i + 1)</h4>
+                            <button type="button" onclick="removeValueRow(@i)" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Operation Code *</label>
+                                <input asp-for="Input.Values[i].OperationCode" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Chave *</label>
+                                <input asp-for="Input.Values[i].Chave" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Valor *</label>
+                                <input asp-for="Input.Values[i].Valor" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Ordem *</label>
+                                <input asp-for="Input.Values[i].Ordem" type="number" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                            </div>
+                            <div class="flex items-center space-x-6 pt-6">
+                                <label class="flex items-center space-x-2">
+                                    <input asp-for="Input.Values[i].Encriptado" type="checkbox" class="w-4 h-4 text-primary rounded" />
+                                    <span class="text-xs text-gray-700">Encriptado</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input asp-for="Input.Values[i].Ativo" type="checkbox" class="w-4 h-4 text-primary rounded" />
+                                    <span class="text-xs text-gray-700">Ativo</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end space-x-4">
+            <a href="/Admin/Providers" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                Cancelar
+            </a>
+            <button type="submit" class="px-8 py-3 btn-primary text-white rounded-lg font-medium hover:shadow-lg transition">
+                <i class="fas fa-save mr-2"></i>Guardar Alterações
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let valueIndex = @Model.Input.Values.Count;
+
+        function addValueRow() {
+            const container = document.getElementById('valuesContainer');
+            const row = document.createElement('div');
+            row.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+            row.id = `value-row-${valueIndex}`;
+            
+            row.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <h4 class="text-sm font-semibold text-gray-900">Configuração #${valueIndex + 1}</h4>
+                    <button type="button" onclick="removeValueRow(${valueIndex})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Operation Code *</label>
+                        <input name="Input.Values[${valueIndex}].OperationCode" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Chave *</label>
+                        <input name="Input.Values[${valueIndex}].Chave" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Valor *</label>
+                        <input name="Input.Values[${valueIndex}].Valor" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Ordem *</label>
+                        <input name="Input.Values[${valueIndex}].Ordem" type="number" value="${valueIndex + 1}" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required />
+                    </div>
+                    <div class="flex items-center space-x-6 pt-6">
+                        <label class="flex items-center space-x-2">
+                            <input name="Input.Values[${valueIndex}].Encriptado" type="hidden" value="false" />
+                            <input name="Input.Values[${valueIndex}].Encriptado" type="checkbox" value="true" class="w-4 h-4 text-primary rounded" />
+                            <span class="text-xs text-gray-700">Encriptado</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input name="Input.Values[${valueIndex}].Ativo" type="hidden" value="false" />
+                            <input name="Input.Values[${valueIndex}].Ativo" type="checkbox" value="true" checked class="w-4 h-4 text-primary rounded" />
+                            <span class="text-xs text-gray-700">Ativo</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(row);
+            valueIndex++;
+        }
+
+        function removeValueRow(index) {
+            const row = document.getElementById(`value-row-${index}`);
+            if (row) {
+                row.remove();
+            }
+        }
+    </script>
+}

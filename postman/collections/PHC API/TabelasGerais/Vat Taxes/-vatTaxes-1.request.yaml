@@ -1,0 +1,20 @@
+$kind: http-request
+name: /vatTaxes
+url: "{{baseUrl}}/vatTaxes/6"
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"rate\": 10.55,\r
+
+    \  \"reference\": \"\",\r
+
+    \  \"description\": \"\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: ""
+order: 1776763784794

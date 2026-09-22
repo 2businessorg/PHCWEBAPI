@@ -1,0 +1,11 @@
+$kind: http-request
+name: /vatTaxes
+url: "{{baseUrl}}/vatTaxes?pageSize=5"
+method: GET
+queryParams:
+  pageSize: "5"
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 1226804342538

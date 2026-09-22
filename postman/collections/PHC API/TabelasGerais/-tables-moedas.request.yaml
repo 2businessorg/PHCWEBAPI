@@ -1,0 +1,7 @@
+$kind: http-request
+name: /tables/moedas
+url: http://localhost:7298/api/tables/moedas
+method: GET
+auth:
+  type: noauth
+order: 1000

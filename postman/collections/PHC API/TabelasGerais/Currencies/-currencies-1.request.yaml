@@ -1,0 +1,18 @@
+$kind: http-request
+name: /currencies
+url: "{{baseUrl}}/currencies"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"pais\": \"Angola\",\r
+
+    \  \"moeda\": \"KW\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1000

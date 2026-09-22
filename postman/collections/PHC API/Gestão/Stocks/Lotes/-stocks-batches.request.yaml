@@ -1,0 +1,6 @@
+$kind: http-request
+name: /stocks/batches
+description: Lista todos os lotes (batches).
+url: "{{baseUrl}}/stocks/batches"
+method: GET
+order: 1000

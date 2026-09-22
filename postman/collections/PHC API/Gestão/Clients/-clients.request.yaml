@@ -1,0 +1,11 @@
+$kind: http-request
+name: /clients
+url: "{{baseUrl}}/clients?pageSize=5"
+method: GET
+queryParams:
+  pageSize: "5"
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 1000

@@ -1,0 +1,33 @@
+$kind: http-request
+name: Insert FT
+url: https://tecnica.mz.2business-apps.com:444/tecnica/2B/IntranetMaster/ws/wscript.asmx
+method: POST
+headers:
+  - key: Content-Type
+    value: text/xml
+  - key: SOAPAction
+    value: http://www.phc.pt/RunCode
+    disabled: true
+body:
+  type: xml
+  content: >-
+    <?xml version="1.0" encoding="utf-8"?>
+
+    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+      <soap:Body>
+        <RunCode xmlns="http://www.phc.pt/">
+          <userName>isac.munguambe</userName>
+          <password>Murd3rrr</password>
+          <code>insertFtAPI</code>
+          <parameter><val>{"ndoc":21,"no":2,"ftano":null,"estab":null,"nome":null,"data":null,"moeda":null,"lstFi":[{"ref":"S1","qtt":3.0,"design":null,"precoVenda":null,"tabIva":null,"ivaIncl":null}]}</val></parameter>
+        </RunCode>
+      </soap:Body>
+    </soap:Envelope>
+auth:
+  type: noauth
+settings:
+  disabledSystemHeaders:
+    - content-type
+order: 2000

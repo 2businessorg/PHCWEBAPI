@@ -1,0 +1,281 @@
+{
+    "codigo": 2,
+    "provedor": "MPDC",
+    "environment": "Development",
+    "descricao": "Maputo Port Development Company - Development Environment",
+    "ativo": true,
+    "values": [
+        {
+            "operationCode": "NOTIFYCONSIGMENTS",
+            "chave": "Method",
+            "valor": "POST",
+            "encriptado": false,
+            "ordem": 1,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTS",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/CFMConsignments",
+            "encriptado": false,
+            "ordem": 2,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTS",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 3,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTS",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 4,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTSDEPARTURE",
+            "chave": "Method",
+            "valor": "PUT",
+            "encriptado": false,
+            "ordem": 10,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTSDEPARTURE",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/CFMConsignments/consignments/CONSIGNMENTTOREPLACE$/departure",
+            "encriptado": false,
+            "ordem": 11,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTSDEPARTURE",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 12,
+            "ativo": true
+        },
+        {
+            "operationCode": "NOTIFYCONSIGMENTSDEPARTURE",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 13,
+            "ativo": true
+        },
+        {
+            "operationCode": "ApproveWagonOperation",
+            "chave": "Method",
+            "valor": "POST",
+            "encriptado": false,
+            "ordem": 20,
+            "ativo": true
+        },
+        {
+            "operationCode": "ApproveWagonOperation",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/WagonsRequests/notify-wagon-request-approval/REQUESTREPLACE$",
+            "encriptado": false,
+            "ordem": 21,
+            "ativo": true
+        },
+        {
+            "operationCode": "ApproveWagonOperation",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 22,
+            "ativo": true
+        },
+        {
+            "operationCode": "ApproveWagonOperation",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 23,
+            "ativo": true
+        },
+        {
+            "operationCode": "UPDATESTATION",
+            "chave": "Method",
+            "valor": "PUT",
+            "encriptado": false,
+            "ordem": 30,
+            "ativo": true
+        },
+        {
+            "operationCode": "UPDATESTATION",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api//CFMConsignments/consignments/station",
+            "encriptado": false,
+            "ordem": 31,
+            "ativo": true
+        },
+        {
+            "operationCode": "UPDATESTATION",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 32,
+            "ativo": true
+        },
+        {
+            "operationCode": "UPDATESTATION",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 33,
+            "ativo": true
+        },
+        {
+            "operationCode": "StartShunting",
+            "chave": "Method",
+            "valor": "PUT",
+            "encriptado": false,
+            "ordem": 40,
+            "ativo": true
+        },
+        {
+            "operationCode": "StartShunting",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/WagonsRequests/start-shunting/REQUESTREPLACE$",
+            "encriptado": false,
+            "ordem": 41,
+            "ativo": true
+        },
+        {
+            "operationCode": "StartShunting",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 42,
+            "ativo": true
+        },
+        {
+            "operationCode": "StartShunting",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 43,
+            "ativo": true
+        },
+        {
+            "operationCode": "CloseShunting",
+            "chave": "Method",
+            "valor": "PUT",
+            "encriptado": false,
+            "ordem": 50,
+            "ativo": true
+        },
+        {
+            "operationCode": "CloseShunting",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/WagonsRequests/close-shunting/REQUESTREPLACE$",
+            "encriptado": false,
+            "ordem": 51,
+            "ativo": true
+        },
+        {
+            "operationCode": "CloseShunting",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 52,
+            "ativo": true
+        },
+        {
+            "operationCode": "CloseShunting",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 53,
+            "ativo": true
+        },
+        {
+            "operationCode": "NotifyTopUp",
+            "chave": "Method",
+            "valor": "PUT",
+            "encriptado": false,
+            "ordem": 60,
+            "ativo": true
+        },
+        {
+            "operationCode": "NotifyTopUp",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/WagonsRequests/notify-topUp-approval/REQUESTREPLACE$",
+            "encriptado": false,
+            "ordem": 61,
+            "ativo": true
+        },
+        {
+            "operationCode": "NotifyTopUp",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 62,
+            "ativo": true
+        },
+        {
+            "operationCode": "NotifyTopUp",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 63,
+            "ativo": true
+        },
+        {
+            "operationCode": "AUTH",
+            "chave": "Method",
+            "valor": "POST",
+            "encriptado": false,
+            "ordem": 70,
+            "ativo": true
+        },
+        {
+            "operationCode": "AUTH",
+            "chave": "Url",
+            "valor": "https://uat1.portmaputo.com:9000/api/auth",
+            "encriptado": false,
+            "ordem": 71,
+            "ativo": true
+        },
+        {
+            "operationCode": "AUTH",
+            "chave": "Port",
+            "valor": "9000",
+            "encriptado": false,
+            "ordem": 72,
+            "ativo": true
+        },
+        {
+            "operationCode": "AUTH",
+            "chave": "ContentType",
+            "valor": "application/json",
+            "encriptado": false,
+            "ordem": 73,
+            "ativo": true
+        },
+        {
+            "operationCode": "AUTH",
+            "chave": "Username",
+            "valor": "cfm.user",
+            "encriptado": false,
+            "ordem": 74,
+            "ativo": true
+        },
+        {
+            "operationCode": "AUTH",
+            "chave": "Password",
+            "valor": "cfm1ntegr@t1onPa$$2023",
+            "encriptado": true,
+            "ordem": 75,
+            "ativo": true
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+$kind: http-request
+name: /currencies/exchangeRates
+url: "{{baseUrl}}/currencies/exchangeRates"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"currency\": \"ZAR\",\r
+
+    \    \"country\": \"Estados\",\r
+
+    \    \"buyRate\": 64,\r
+
+    \    \"sellRate\": 64.5\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1428

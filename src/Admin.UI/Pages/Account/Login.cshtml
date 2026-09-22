@@ -1,0 +1,140 @@
+@page "/Admin/Account/Login"
+@using Microsoft.Extensions.Options
+@using Admin.UI.Settings
+@inject IOptions<AdminUISettings> AdminSettings
+@model Admin.UI.Pages.Account.LoginModel
+@{
+    Layout = null;
+    var settings = AdminSettings.Value;
+    var colors = settings.Colors;
+}
+
+<!DOCTYPE html>
+<html lang="pt" class="h-full bg-gray-50">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Admin Panel</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-primary: @colors.Primary;
+            --color-primary-hover: @colors.PrimaryHover;
+        }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .btn-primary {
+            background: var(--color-primary);
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+            box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '@colors.Primary',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full flex items-center justify-center bg-white">
+    <div class="w-full max-w-md px-6">
+        <div class="bg-white">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="mx-auto mb-6 flex items-center justify-center" style="height: @(settings.LogoHeight + 20)px;">
+                    <img src="@settings.LogoUrl" 
+                         alt="@settings.LogoAlt" 
+                         style="max-width: @(settings.LogoWidth)px; max-height: @(settings.LogoHeight)px; width: auto; height: auto;"
+                         class="object-contain" />
+                </div>
+                <h1 class="text-2xl font-semibold text-gray-900 mb-1">Admin Panel</h1>
+                <p class="text-sm text-gray-600">Faça login para continuar</p>
+            </div>
+            
+            <!-- Form -->
+            <div class="border border-gray-300 rounded-lg p-8">
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start text-sm">
+                        <i class="fas fa-exclamation-circle mr-2 mt-0.5"></i>
+                        <span>@Model.ErrorMessage</span>
+                    </div>
+                }
+                
+                <form method="post">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    
+                    <!-- Username -->
+                    <div class="mb-5">
+                        <label asp-for="Input.Username" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nome de Utilizador
+                        </label>
+                        <input asp-for="Input.Username" 
+                               class="block w-full px-3 py-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                               placeholder="admin" 
+                               required 
+                               autofocus />
+                        <span asp-validation-for="Input.Username" class="text-red-500 text-xs mt-1"></span>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="mb-6">
+                        <label asp-for="Input.Password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Password
+                        </label>
+                        <input asp-for="Input.Password" 
+                               type="password" 
+                               class="block w-full px-3 py-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                               placeholder="••••••••" 
+                               required />
+                        <span asp-validation-for="Input.Password" class="text-red-500 text-xs mt-1"></span>
+                    </div>
+                    
+                    <!-- Remember Me -->
+                    <div class="mb-6 flex items-center">
+                        <input asp-for="Input.RememberMe" 
+                               type="checkbox" 
+                               class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
+                        <label asp-for="Input.RememberMe" class="ml-2 text-sm text-gray-700">
+                            Manter sessão iniciada
+                        </label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" 
+                            class="w-full btn-primary text-white font-medium py-2.5 px-4 rounded text-sm">
+                        Iniciar sessão
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Footer -->
+            <div class="mt-6 text-center">
+                <p class="text-xs text-gray-500">Acesso restrito a administradores</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

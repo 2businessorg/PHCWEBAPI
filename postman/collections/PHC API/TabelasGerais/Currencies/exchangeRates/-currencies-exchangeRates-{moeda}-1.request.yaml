@@ -1,0 +1,16 @@
+$kind: http-request
+name: /currencies/exchangeRates/{moeda}
+url: "{{baseUrl}}/currencies/exchangeRates/{moeda}"
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \    \"pais\": \"Angdasda22\"\r
+
+    }"
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 2041964117624423

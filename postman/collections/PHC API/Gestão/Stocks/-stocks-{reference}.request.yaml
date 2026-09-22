@@ -1,0 +1,8 @@
+$kind: http-request
+name: /stocks/{reference}
+description: Obtem dados de uma referencia específica
+url: "{{baseUrl}}/stocks/{{referencia}}"
+method: GET
+auth:
+  type: noauth
+order: 2000

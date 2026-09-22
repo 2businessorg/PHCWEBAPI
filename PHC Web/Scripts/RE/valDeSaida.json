@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "clientId": 2,
+  "bankAccountId": 1,
+  "totalCount": 2,
+  "documents": {
+    "Re": {
+      "ndoc": 45,
+      "rno": 1,
+      "total": 20.0,
+      "addFields": null,
+      "linhas": [
+        {
+          "nrdoc": 45,
+          "ftano": 2026,
+          "cdesc": "Descrição",
+          "erec": 20.0,
+          "eval": 100.0,
+          "addFields": null
+        }
+      ]
+    },
+    "Rd": [
+      {
+        "ndoc": 50,
+        "rno": 1,
+        "total": 50.0,
+        "nrdoc": 5,
+        "ftano": 2026
+      }
+    ]
+  }
+}

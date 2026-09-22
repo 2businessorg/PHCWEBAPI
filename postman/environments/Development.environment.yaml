@@ -1,0 +1,23 @@
+name: Development
+values:
+  - key: baseUrl
+    value: 'http://localhost:5000'
+    enabled: true
+  - key: accessToken
+    value: ''
+    enabled: true
+  - key: username
+    value: admin@phcapi.local
+    enabled: true
+  - key: password
+    value: ''
+    enabled: true
+  - key: referenceExample
+    value: ART-001
+    enabled: true
+  - key: batchExample
+    value: LOT-2024-001
+    enabled: true
+  - key: warehouseNumber
+    value: '1'
+    enabled: true

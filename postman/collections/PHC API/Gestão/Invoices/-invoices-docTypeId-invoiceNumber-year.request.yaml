@@ -1,0 +1,9 @@
+$kind: http-request
+name: /invoices/docTypeId/invoiceNumber/year
+url: "{{baseUrl}}/invoices/21/8/2026"
+method: GET
+auth:
+  credentials:
+    token: "{{accessToken}}"
+  type: bearer
+order: 4316254879017105

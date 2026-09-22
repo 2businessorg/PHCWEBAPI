@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/template-pack.json",
+  "version": "1.0.0",
+  "name": "PHCAPI.Templates",
+  "description": "Templates for creating modular Clean Architecture Web APIs",
+  "author": "Your Organization",
+  "classifications": [
+    "Web",
+    "API",
+    "Clean Architecture"
+  ],
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  }
+}

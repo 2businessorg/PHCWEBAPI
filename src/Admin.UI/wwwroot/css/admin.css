@@ -1,0 +1,65 @@
+/* Admin UI - Custom Styles (Optional) */
+
+/* Additional custom styles can be added here */
+/* Tailwind CSS handles most of the styling via CDN */
+
+/* Custom scrollbar for sidebar */
+#sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+#sidebar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+#sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+#sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Custom focus styles */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Smooth transitions for all interactive elements */
+button,
+a,
+input,
+select {
+    transition: all 0.2s ease;
+}
+
+/* Print styles */
+@media print {
+    #sidebar,
+    .no-print {
+        display: none !important;
+    }
+    
+    .pl-64 {
+        padding-left: 0 !important;
+    }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    #sidebar {
+        transform: translateX(-100%);
+    }
+    
+    #sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .pl-64 {
+        padding-left: 0 !important;
+    }
+}

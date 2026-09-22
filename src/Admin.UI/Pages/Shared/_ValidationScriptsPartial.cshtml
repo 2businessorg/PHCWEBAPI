@@ -1,0 +1,41 @@
+@*
+    Client-side validation scripts for ASP.NET Core Razor Pages
+    Provides real-time form validation using jQuery Validation
+*@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.21.0/jquery.validate.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+<script>
+    // Custom validation configurations
+    $(document).ready(function() {
+        // Override default validation messages (Portuguese)
+        if ($.validator) {
+            $.validator.messages.required = "Campo obrigatório";
+            $.validator.messages.email = "Email inválido";
+            $.validator.messages.maxlength = $.validator.format("Máximo de {0} caracteres");
+            $.validator.messages.minlength = $.validator.format("Mínimo de {0} caracteres");
+            $.validator.messages.range = $.validator.format("Digite um valor entre {0} e {1}");
+            $.validator.messages.max = $.validator.format("Digite um valor menor ou igual a {0}");
+            $.validator.messages.min = $.validator.format("Digite um valor maior ou igual a {0}");
+            
+            // Custom validation styling
+            $.validator.setDefaults({
+                highlight: function(element) {
+                    $(element).addClass('border-red-500 focus:ring-red-500').removeClass('border-gray-300');
+                    $(element).closest('.form-group').addClass('has-error');
+                },
+                unhighlight: function(element) {
+                    $(element).removeClass('border-red-500 focus:ring-red-500').addClass('border-gray-300');
+                    $(element).closest('.form-group').removeClass('has-error');
+                },
+                errorElement: 'span',
+                errorClass: 'text-red-500 text-xs mt-1 block',
+                errorPlacement: function(error, element) {
+                    error.insertAfter(element.closest('.relative').length ? element.closest('.relative') : element);
+                }
+            });
+        }
+    });
+</script>

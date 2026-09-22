@@ -1,0 +1,26 @@
+$kind: collection
+name: PHC API
+description: Collection principal com todos os módulos da PHCAPI
+variables:
+  - key: baseUrl
+    value: ""
+    disabled: true
+    secret: false
+  - key: baseUrl
+    value: ""
+    secret: false
+  - key: accessToken
+    value: ""
+    secret: false
+  - key: adminAcessToken
+    value: ""
+    secret: false
+  - key: username
+    value: ""
+    secret: false
+  - key: password
+    value: ""
+    secret: false
+  - key: referencia
+    value: ""
+    secret: false

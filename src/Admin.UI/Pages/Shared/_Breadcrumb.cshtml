@@ -1,0 +1,37 @@
+@*
+    Breadcrumb Navigation Component
+    Usage: <partial name="_Breadcrumb" model="new List<BreadcrumbItem> { new("Home", "/"), new("Users") }" />
+*@
+
+@{
+    var items = ViewData["Items"] as List<(string Text, string? Url)> ?? new List<(string Text, string? Url)>();
+}
+
+@if (items.Any())
+{
+    <nav class="mb-6" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2 text-sm">
+            <li>
+                <a href="/" class="text-gray-500 hover:text-gray-700 transition">
+                    <i class="fas fa-home"></i>
+                </a>
+            </li>
+            @foreach (var item in items)
+            {
+                <li class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
+                    @if (!string.IsNullOrEmpty(item.Url))
+                    {
+                        <a href="@item.Url" class="text-gray-500 hover:text-gray-700 transition">
+                            @item.Text
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-gray-900 font-medium">@item.Text</span>
+                    }
+                </li>
+            }
+        </ol>
+    </nav>
+}

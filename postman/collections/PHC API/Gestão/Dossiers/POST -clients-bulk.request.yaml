@@ -1,0 +1,34 @@
+$kind: http-request
+name: POST /clients/bulk
+url: "{{baseUrl}}/clients/bulk"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"items\": [\r
+
+    \    {\r
+
+    \      \"no\": 9,\r
+
+    \      \"estab\": 1,\r
+
+    \      \"nome\": \"string\",\r
+
+    \      \"ncont\": \"string\",\r
+
+    \      \"telefone\": \"string\",\r
+
+    \      \"morada\": \"string\"\r
+
+    \    }\r
+
+    \  ]\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJqdGkiOiJiZDQ2Njc4NC0xOTQ4LTQzYzQtYjAxZi0xZmUyOGM0ZThmZGYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbmlzdHJhdG9yIiwiZXhwIjoxNzc1MTQ4MTg2LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjcyOTgiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjcyOTgifQ.myQ63RFwPBopFFeiQelSMEeZ-HH7CLStqO6fj6L8RCw
+order: 5000

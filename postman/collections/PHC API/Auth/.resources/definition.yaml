@@ -1,0 +1,13 @@
+$kind: collection
+name: Auth
+description: |-
+  Credenciais de Teste
+
+  Srv05\\SQLDEV2022 - ONBD_2BMasterPAX
+
+  { "username": "2bMasterP", "password": ""}
+
+  Srv05\\SQLDEV2022 - E14E105BD_CFM
+
+  { "username": "2bCFME14", "password": ""}
+order: 654

@@ -1,0 +1,18 @@
+$kind: http-request
+name: /auth/users/admin
+url: "{{baseUrl}}/auth/users/admin"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"username\": \"2badmin\",\r
+
+    \    \"email\": \"admin@example.com\",\r
+
+    \    \"password\": \"Vencer198969!\"\r
+
+    }"
+auth:
+  type: noauth
+order: 1000

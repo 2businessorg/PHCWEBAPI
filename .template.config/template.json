@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Your Organization",
+  "classifications": [
+    "Web",
+    "API",
+    "Clean Architecture",
+    "Modular",
+    "ASP.NET Core"
+  ],
+  "identity": "PHCAPI.Template",
+  "name": "PHC Web API - Modular Clean Architecture",
+  "shortName": "phcapi",
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "sourceName": "PHCAPI",
+  "preferNameDirectory": true,
+  "symbols": {
+    "UseAuditModule": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Audit module"
+    },
+    "UseAuthModule": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Authentication module"
+    },
+    "UseParametersModule": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Parameters module"
+    },
+    "UseProvidersModule": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Providers module"
+    },
+    "IncludeAdminUI": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include Admin UI project"
+    },
+    "IncludeTests": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Include test projects"
+    },
+    "DatabaseProvider": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "SqlServer",
+          "description": "Use SQL Server"
+        },
+        {
+          "choice": "PostgreSQL",
+          "description": "Use PostgreSQL"
+        }
+      ],
+      "defaultValue": "SqlServer",
+      "description": "Database provider to use"
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(!UseAuditModule)",
+          "exclude": [
+            "src/Modules/Audit/**/*"
+          ]
+        },
+        {
+          "condition": "(!UseAuthModule)",
+          "exclude": [
+            "src/Modules/Auth/**/*"
+          ]
+        },
+        {
+          "condition": "(!UseParametersModule)",
+          "exclude": [
+            "src/Modules/Parameters/**/*"
+          ]
+        },
+        {
+          "condition": "(!UseProvidersModule)",
+          "exclude": [
+            "src/Modules/Providers/**/*"
+          ]
+        },
+        {
+          "condition": "(!IncludeAdminUI)",
+          "exclude": [
+            "src/Admin.UI/**/*"
+          ]
+        },
+        {
+          "condition": "(!IncludeTests)",
+          "exclude": [
+            "tests/**/*"
+          ]
+        },
+        {
+          "exclude": [
+            "**/bin/**/*",
+            "**/obj/**/*",
+            "**/.vs/**/*",
+            "**/logs/**/*",
+            "**/*.user",
+            ".git/**/*",
+            ".github/**/*"
+          ]
+        }
+      ]
+    }
+  ],
+  "primaryOutputs": [
+    {
+      "path": "PHCAPI.slnx"
+    },
+    {
+      "path": "src/PHCAPI.Host/PHCAPI.Host.csproj"
+    }
+  ],
+  "postActions": [
+    {
+      "description": "Restore NuGet packages",
+      "manualInstructions": [
+        {
+          "text": "Run 'dotnet restore'"
+        }
+      ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "continueOnError": true
+    }
+  ]
+}

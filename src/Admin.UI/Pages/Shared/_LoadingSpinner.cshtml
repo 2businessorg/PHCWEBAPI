@@ -1,0 +1,30 @@
+@*
+    Loading Spinner Component
+    Usage: <partial name="_LoadingSpinner" />
+*@
+
+@{
+    var message = ViewData["Message"]?.ToString() ?? "A carregar...";
+}
+
+<div class="flex items-center justify-center p-12">
+    <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary mb-4">
+            <div class="animate-spin">
+                <i class="fas fa-spinner text-3xl text-white"></i>
+            </div>
+        </div>
+        <p class="text-sm font-medium text-gray-600">@message</p>
+    </div>
+</div>
+
+<style>
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+</style>

@@ -1,0 +1,14 @@
+$kind: http-request
+name: /clients/no/estab
+url: "{{baseUrl}}/clients/4816/1"
+method: GET
+queryParams:
+  - key: pagesize
+    value: "5"
+    disabled: true
+auth:
+  credentials:
+    - key: token
+      value: "{{accessToken}}"
+  type: bearer
+order: 2787

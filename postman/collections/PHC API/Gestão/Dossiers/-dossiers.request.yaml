@@ -1,0 +1,19 @@
+$kind: http-request
+name: /dossiers
+url: "{{baseUrl}}/dossiers?page=1&pageSze=10"
+method: GET
+queryParams:
+  - key: page
+    value: "1"
+    $type: ""
+  - key: pageSze
+    value: "10"
+    $type: ""
+body:
+  type: json
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1000

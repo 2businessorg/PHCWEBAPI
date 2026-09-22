@@ -1,0 +1,22 @@
+$kind: http-request
+name: /dossiers min
+url: "{{baseUrl}}/dossiers"
+method: POST
+body:
+  type: json
+  content: |-
+    {
+        "docTypeId": 45,
+        "entityId": 2,
+        "lines": [
+            {
+                "productCode": "P1",
+                "quantity": 6
+            }
+        ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000

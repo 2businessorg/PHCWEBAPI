@@ -1,0 +1,5 @@
+$kind: http-request
+name: /stocks/warehouses
+url: "{{baseUrl}}/stocks/warehouses"
+method: GET
+order: 3088684795250876

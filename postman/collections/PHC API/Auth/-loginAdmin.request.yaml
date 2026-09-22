@@ -1,0 +1,16 @@
+$kind: http-request
+name: /loginAdmin
+url: "{{baseUrl}}/Auth/login"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"username\": \"2badmin\",\r
+
+    \    \"password\": \"Vencer198969!\"\r
+
+    }"
+auth:
+  type: noauth
+order: 4000
