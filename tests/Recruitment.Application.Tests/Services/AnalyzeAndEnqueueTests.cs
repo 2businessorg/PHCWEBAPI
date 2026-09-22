@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Recruitment.Application.Jobs;
 using Recruitment.Application.Options;
+using Recruitment.Application.Privacy;
 using Recruitment.Application.Scoring;
 using Recruitment.Application.Services;
 using Recruitment.Domain.Constants;
@@ -267,7 +268,17 @@ public class AnalyzeCandidateJobTests
             scorer,
             avisos.Object,
             Microsoft.Extensions.Options.Options.Create(new RecruitmentIaOptions { EnableCloudLlm = false }),
+            new FlagOffCloudEgressGuard(),
             NullLogger<AnalyzeCandidateJob>.Instance);
+    }
+    private sealed class FlagOffCloudEgressGuard : IRecruitmentCloudEgressGuard
+    {
+        public Task<CloudEgressPreparation> PrepareAsync(
+            string sessionId,
+            string documentId,
+            string plainText,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CloudEgressPreparation(false, false, null, "flag off", null));
     }
 }
 
