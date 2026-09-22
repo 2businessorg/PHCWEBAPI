@@ -85,3 +85,7 @@ Title/footer: score is **input**; human decides in PHC. Forbidden: «seleccionad
 ## Tests
 
 `tests/Recruitment.Application.Tests` — no citation→0; OCR fail→no score; SRT write shape; selection unchanged; Alfredo fixture notes.
+
+## DTTest (Alfredo) static pre-check
+
+See `docs/modulos/DTTest-Alfredo-Recrutamento-IA-static-precheck-2026-09-22.md` — SHA `14204ad`, endpoint map, AH-02/04/08 static Pass/Fail, curl runbook, gaps vs Pass Dinis.
