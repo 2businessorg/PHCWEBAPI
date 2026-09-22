@@ -1,0 +1,4 @@
+# Placeholder employer names for lab only — NEVER commit real client names.
+Acme Corp
+ExampleEmployer SA
+FakeClient Lda
