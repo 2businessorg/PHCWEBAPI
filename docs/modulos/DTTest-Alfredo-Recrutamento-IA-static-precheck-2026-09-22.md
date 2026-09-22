@@ -1,291 +1,64 @@
-# DTTest Alfredo — Recrutamento × IA — static pre-check (2026-09-22)
+# Static code review — Recrutamento × IA — main@14204ad
 
-**Repo:** `2businessorg/PHCWEBAPI` (local often `PHCAPI`)  
-**Amarras:** AH-REC-IA-v1 · DTTest lab script 2026-09-22 · docs `docs/modulos/Recrutamento-IA.md`  
-**Scope:** READ-ONLY static + unit-test evidence. **Not** live Pass Dinis.  
-**Authoring:** Cloud Agent investigation for Alfredo.
+**Date:** 2026-09-22  
+**Scope:** STATIC only (Alfredo cannot reach Host — Denilson laptop `http://127.0.0.1:7298` only).  
+**SHA:** `14204ad2cbe3fbf6f3434b38ea13386b5c7790f3` = `main` = `origin/main`  
+**Product code:** unchanged. Live curl: **out of scope for Alfredo** (Imran smoke on Denilson host).
 
----
-
-## 1) Commit / SHA confirmation
-
-| Check | Result |
-|-------|--------|
-| Local `main` HEAD | `14204ad2cbe3fbf6f3434b38ea13386b5c7790f3` |
-| Subject | `feat(recruitment): Recrutamento × IA — AH/BR/HITL (PR #2)` |
-| `origin/main` | **same** `14204ad` (confirmed via fetch) |
-| Module tree | `src/Modules/Pessoal/Recruitment/{Domain,Application,Infrastructure,Presentation}` |
-| SQL overlay | `scripts/Recruitment_AddIaColumns.sql` |
-| Docs | `docs/modulos/Recrutamento-IA.md`, `docs/ai/Recrutamento-IA.md` |
-| Tests | `tests/Recruitment.Application.Tests` |
-
-**Verdict:** Recruitment IA module **is present** on `main` at squash `14204ad`.
+Paths relative to repo root. Line numbers from tree at `14204ad` / this docs branch (module files unchanged).
 
 ---
 
-## 2) Endpoint map — `/api/recruitment/...`
+## Pass / Fail table (hard DoD + enqueue + side-effects)
 
-**Controller:** `src/Modules/Pessoal/Recruitment/Recruitment.Presentation/REST/Controllers/RecruitmentIaController.cs`  
-**Route prefix:** `api/recruitment`  
-**Auth:** `[Authorize(Policy = AppPolicies.ApiAccess)]` on all actions  
-**ModuleAuthorization:** prefix `/api/recruitment` → pack `Gestão` (`src/PHCAPI.Host/appsettings.json`)
+| ID | Criterion | Verdict | Evidence (file:line) |
+|----|-----------|---------|----------------------|
+| **AH-02** | `note>0` requires quote ⊆ `u_texto`; invent quote → fail | **PASS** | Quote asserted at score time: `Recruitment.Application/Scoring/RubricEvidenceScorer.cs:68`, kill helper `:189-200` throws `AH-02: citacao nao pertence a u_texto`. Job re-checks every `note>0` before persist: `Recruitment.Application/Jobs/AnalyzeCandidateJob.cs:158-163`. Empty/no match → note=0, no quote: `RubricEvidenceScorer.cs:56-63`, `:101-112`. Unit invent→throw: `tests/.../RubricEvidenceScorerTests.cs:108-114`. Unit no-skill→0: `:39-50`. |
+| **AH-04** | Zero product copy «seleccionado / rejeitado / avançado pela IA» | **PASS*** | Ban list: `Recruitment.Domain/Constants/IaEstados.cs:38-45`. Guard: `Scoring/ForbiddenCopyGuard.cs:10-28`. Applied: scorer `:82`; job justifications `:162`, JSON `:188`; ranking title/footer `Features/GetRctRanking/GetRctRankingQuery.cs:63-64`; compare title `Features/CompareCandidates/CompareCandidatesQuery.cs:47`; aviso stub `Infrastructure/Notifications/PhcAvisoServiceStub.cs:44-49`. HITL allowed copy: `IaEstados.cs:29-33`. No auto-select routes: controller comment `Presentation/.../RecruitmentIaController.cs:16-18`. Unit: `RubricEvidenceScorerTests.cs:118-134`. |
+| **AH-08** | OCR fail / empty text → `estado_ia=erro`, **no** score | **PASS** | Gate: `AnalyzeCandidateJob.cs:116-124` — `ClearScoreOnOcrErrorAsync` `:119`, `SetEstadoIa(Erro)` `:120`, `MarkError` `:121`, **return before** `Score`/`SaveScore`. Clear SQL nulls IA cols only: `Infrastructure/Repositories/SrtAndOutboxRepositories.cs:71-88`. `SaveScore` never touches selection/condp: `:46-56`. Unit: `AnalyzeAndEnqueueTests.cs:20-86` (`ClearScore` Once, `SaveScore` Never, scorer Never). |
+| **E1** | Enqueue without crt / without RCTCLB → refuse; no score job | **PASS** | Counts: `Services/RecruitmentEnqueueService.cs:58-59`. Refuse crt&lt;1: `:65-75` (`Enqueued=false`, return **before** outbox). Refuse clb&lt;1 (unless lab GO): `:78-88`. Outbox+`pendente` only after pass: `:103-126`. Lab exception gated: `:62-63`, options default off `Options/RecruitmentIaOptions.cs:22-23` + `Host/appsettings.json` `AllowLabEnqueueWithoutRctclb: false`. Units: `AnalyzeAndEnqueueTests.cs:208-241` (Strict outbox → no insert). |
+| **E2 / side-effect** | Fail/cancel mid → recoverable; no ghost score; selection/`condp` unchanged | **PASS (fail path) / PARTIAL (cancel)** | Snapshot before work: `AnalyzeCandidateJob.cs:81-83`. Post OCR-fail + post-success assert: `:123`, `:212`, `:237-251` (throws if selection or `condp` changed). Fail helper sets `erro` + outbox error: `:215-219` (**does not** always ClearScore — only OCR path clears). `SaveScore` UPDATE list excludes selection/condp: `SrtAndOutboxRepositories.cs:46-56`. Selection columns configured read-only snapshot: `Options/RecruitmentSchemaOptions.cs:44`. **Gap:** no HTTP cancel; Hangfire abort only. Fail-after-prior-score without OCR clear leaves previous `u_scoreia` until reprocess/OCR-clear. |
 
-| Method | Route | Body / query | Response shape | Handler |
-|--------|-------|--------------|----------------|---------|
-| POST | `/api/recruitment/enqueue` | `{ cveStamp, rctStamp, srtStamp, labGoRef? }` | `SingleItemResponseDTO<EnqueueAnalysisResultDto>` — always **HTTP 200**; refuse = `enqueued:false` | `EnqueueAnalysisCommand` → `RecruitmentEnqueueService` → Hangfire `AnalyzeCandidateJob` |
-| GET | `/api/recruitment/rct/{rctStamp}/ranking` | path `rctStamp` | `RctRankingDto` (title/footer HITL + candidates: score, estadoIa, breakdown w/ quote) | `GetRctRankingQuery` |
-| GET | `/api/recruitment/rct/{rctStamp}/compare` | `firstSrtStamp`, `otherSrtStamp`, `topDiffCount=3` | `CandidateComparisonDto` (top crt diffs + quotes) | `CompareCandidatesQuery` |
-| POST | `/api/recruitment/reprocess` | `{ cveStamp, rctStamp, srtStamp, requestedBy, labGoRef? }` | same as enqueue (+ audit note in message) | `ReprocessAnalysisCommand` (BR-06) |
-| GET | `/api/recruitment/hitl-copy` | — | `{ title, footer, semEvidencia, note }` | inline constants |
+\*AH-04 residuals (do not flip static PASS of ban enforcement):
 
-**DTOs:** `src/Modules/Pessoal/Recruitment/Recruitment.Application/DTOs/RecruitmentDtos.cs`
-
-```
-EnqueueAnalysisResultDto { enqueued, outboxId?, message, criteriaCount, intervenienteCount }
-RankedCandidateDto { position, srtStamp, cveStamp, candidateName?, scoreTotal?, estadoIa?, condp?, modelo?, promptVer?, stampIa?, breakdown[] }
-CriterionBreakdownDto { code, label, weight, note, quote?, quoteOffset?, semEvidencia, conflito, conflictQuotes[], justificationPt }
-JustificationPayloadDto (persisted in srt.u_justia): { engine, prompt_ver, stamp_utc, used_llm, total, breakdown }
-```
-
-**Worker (not HTTP):** Hangfire job `Recruitment.AnalyzeCandidate`  
-`src/Modules/Pessoal/Recruitment/Recruitment.Application/Jobs/AnalyzeCandidateJob.cs`  
-Scheduled by `HangfireRecruitmentJobScheduler` after successful outbox insert.
-
-**No endpoints for:** auto-select / auto-reject / cancel-job (AH-04 / BR-03). Cancel ≈ Hangfire dashboard abort + outbox orphan / reprocess path.
+1. `RecruitmentIaController.cs:105` — `hitl-copy.note` **documents** forbidden phrases (meta, not decision copy).  
+2. `ForbiddenPhrases` uses ASCII `avancado` / `selecionado`; Unicode `avançado` (ç) not listed (`IaEstados.cs:40-44`).  
+3. No PHC UI/email/export strings in this repo to review.
 
 ---
 
-## 3) Static DoD pre-check (AH hard + enqueue)
+## `/api/recruitment` route map (Imran live smoke on Denilson host)
 
-### AH-02 — quote ⊆ `u_texto` (invent → fail) → **PASS (static / unit)**
+Controller: `Recruitment.Presentation/REST/Controllers/RecruitmentIaController.cs`  
+Prefix: `:21` `[Route("api/recruitment")]` · Auth: `AppPolicies.ApiAccess` · Module pack: `Gestão` (`Host/appsettings.json` RouteModules).
 
-| Evidence | Path |
-|----------|------|
-| Quote generated from contiguous excerpt of OCR text; `AssertQuoteIsSubset` | `RubricEvidenceScorer.cs` L68–69, L189–201 |
-| Job re-asserts every `note>0` quote before `SaveScore` | `AnalyzeCandidateJob.cs` L158–163 |
-| Unit: invented quote throws `*AH-02*` | `RubricEvidenceScorerTests.AssertQuoteIsSubset_InventedQuote_ThrowsAh02` |
-| Unit: no skill → note=0, no quote | `Score_NoCitationForCriterion_ContributionIsZero` |
-| Docs claim | `docs/modulos/Recrutamento-IA.md` AH-02 row |
+| # | Method | Route | Req | Res | Smoke assert |
+|---|--------|-------|-----|-----|--------------|
+| 1 | POST | `/api/recruitment/enqueue` | body `{ cveStamp, rctStamp, srtStamp, labGoRef? }` `:109-115` | `EnqueueAnalysisResultDto` `{ enqueued, outboxId?, message, criteriaCount, intervenienteCount }` | E1: no crt/RCTCLB → `enqueued=false`, no Hangfire job. Happy: `enqueued=true` → job `Recruitment.AnalyzeCandidate` |
+| 2 | GET | `/api/recruitment/rct/{rctStamp}/ranking` | path | `RctRankingDto` + `RankedCandidateDto[]` (score, estadoIa, breakdown.quote) | AH-08 row: `estadoIa=erro`, `scoreTotal=null`. AH-02: quotes ⊆ `anexos.u_texto`. AH-04: title/footer = HitlCopy only |
+| 3 | GET | `/api/recruitment/rct/{rctStamp}/compare` | query `firstSrtStamp`, `otherSrtStamp`, `topDiffCount?` | `CandidateComparisonDto` + `CriterionDiffDto[]` | Diffs carry quotes, not moral narrative |
+| 4 | POST | `/api/recruitment/reprocess` | body `{ cveStamp, rctStamp, srtStamp, requestedBy, labGoRef? }` `:117-124` | same as enqueue (+ audit in message) | BR-06: `requestedBy` required; selection cols unchanged |
+| 5 | GET | `/api/recruitment/hitl-copy` | — | `{ title, footer, semEvidencia, note }` `:98-106` | Title/footer OK; **exclude `note` from naive AH-04 sweep** |
 
-**Live attack still required:** after happy path, falsify `srt.u_justia` quote (or inject via debugger) and confirm UI/API treats as fail / RH falsifier. Ranking **does not** re-validate quotes against live `anexos.u_texto` on read — only write path enforces.
+**Not exposed (by design):** auto-select / auto-reject / cancel-job.
 
-### AH-04 — ban «seleccionado/rejeitado/avançado pela IA» → **PASS (static) with notes**
+**Worker (Hangfire, not REST):** `AnalyzeCandidateJob.JobName` = `Recruitment.AnalyzeCandidate` (`Jobs/AnalyzeCandidateJob.cs:22`). Dashboard: `http://127.0.0.1:7298/hangfire` (Denilson only).
 
-| Evidence | Path |
-|----------|------|
-| Forbidden list | `HitlCopy.ForbiddenPhrases` in `IaEstados.cs` |
-| Runtime guard | `ForbiddenCopyGuard.cs`; used in scorer, job JSON, ranking title/footer, compare |
-| Unit theory | `ForbiddenCopyGuardTests` |
-| Tree grep (production copy) | **No** decision-attributing product strings outside ban-list / test InlineData / meta note |
-| HITL title/footer | explicit “input ao RH / decisao humana” |
-
-**Notes / residual risk for live A4 sweep:**
-
-1. `GET /hitl-copy` **documents** the ban in `note` and therefore **contains** the substrings — exclude meta endpoints from naive string sweep, or expect a documented exception.
-2. Forbidden list uses ASCII `avancado` / `selecionado`; Unicode `avançado` (ç) is **not** listed — add if live PT copy uses cedilla.
-3. No PHC UI / email / export in this repo to sweep — Alfredo must include PHC chrome if any.
-
-### AH-08 — OCR error / empty `u_texto` → no score; `estado_ia=erro` → **PASS (static / unit)**
-
-| Evidence | Path |
-|----------|------|
-| On `!ocr.Success \|\| empty text`: `ClearScoreOnOcrErrorAsync`, `SetEstadoIa(erro)`, `MarkError`, **no** `SaveScore` / **no** `Score()` | `AnalyzeCandidateJob.cs` L116–124 |
-| SQL clears `u_scoreia` + just/modelo/prompt/stamp | `SrtScoreRepository.ClearScoreOnOcrErrorAsync` |
-| Unit | `AnalyzeCandidateJobTests.Execute_OcrFailure_SetsErro_NoScorePersisted` |
-| Empty text in scorer → all `NoEvidence` (note=0) | `RubricEvidenceScorer.ScoreCriterion` |
-
-**Live attack:** corrupt PDF / empty `bdados` OCR → assert ranking shows `estadoIa=erro`, `scoreTotal=null`, Triar manual in PHC (API has no Triar action — human in PHC).
-
-### E1 — enqueue without crt / RCTCLB → **PASS (static / unit)**
-
-| Case | Behaviour |
-|------|-----------|
-| `crtCount < 1` | `Enqueued=false`; message crt; **no** outbox (`MockBehavior.Strict` proves no call) |
-| `clbCount < 1` and not lab GO | refuse; no outbox |
-| Lab exception | only if `AllowLabEnqueueWithoutRctclb=true` **and** `LabGoRef` set |
-| Default config | `AllowLabEnqueueWithoutRctclb: false` |
-
-**Caveat:** HTTP still **200** with soft refuse (not 4xx). Side-effect: on refuse, `cve.u_estadoia` is **not** set to scored/ok (estado only written after successful outbox insert → `pendente`).
-
-### E2 — cancel / fail mid-job → **PARTIAL (static)**
-
-| Path | State |
-|------|-------|
-| OCR/fail paths | `outbox.estado=error`, `cve.u_estadoia=erro`, score cleared or never saved; BR-03/04 assert selection/`condp` unchanged |
-| Hangfire `AutomaticRetry(Attempts=2, Fail)` | retries then fail |
-| **No HTTP cancel** | abort via `/hangfire` or kill worker; orphans via `GetOrphansAsync(OrphanTtlMinutes)` + `/reprocess` |
-| Ghost score | OCR path clears; mid-fail before SaveScore leaves prior score unless cleared — **watch** fail-after-partial-write (AH-02 throw after Score but before Save is OK; FailAsync sets erro but does **not** always `ClearScore`) |
-
-**E2 live must:** force Hangfire fail mid-flight; assert no phantom “ok” score; audit outbox `error_msg`.
-
-### E3 / E4 (brief)
-
-- **E3:** outbox idempotent while `pending|processing` same `srtstamp` (`TryEnqueueAsync` IF EXISTS → null). Reprocess after `done/error` allowed.
-- **E4:** empty crt refused at enqueue and again in job (`AH-01: lista crt vazia`).
+**DTO defs:** `Recruitment.Application/DTOs/RecruitmentDtos.cs`.
 
 ---
 
-## 4) How Alfredo runs live DTTest
+## Static conclusions for Dinis gate prep
 
-### 4.1 Host project
+| Hard ID | Static | Blocks Pass if live fails |
+|---------|--------|---------------------------|
+| AH-02 | **PASS** | P0 |
+| AH-04 | **PASS*** | P0 |
+| AH-08 | **PASS** | P0 |
+| E1 enqueue refuse | **PASS** | process |
+| E2 side-effects | **PASS fail-path / PARTIAL cancel** | process |
 
-```text
-Project: src/PHCAPI.Host
-URL:     http://localhost:7298  (launchSettings “PHCAPI Development (7298)”)
-Hangfire dashboard: /hangfire
-Swagger: /swagger
-```
+**Alfredo:** no Host access — this table is the deliverable.  
+**Imran:** run smoke checklist on Denilson `127.0.0.1:7298` using route map above + SQL overlay `scripts/Recruitment_AddIaColumns.sql`.
 
-```powershell
-cd <repo>\src\PHCAPI.Host
-dotnet run
-# or: <repo>\scripts\start-phcapi.ps1
-```
-
-### 4.2 Required SQL (demo BD e.g. OnTS_2BusinessIA)
-
-1. Run `scripts/Recruitment_AddIaColumns.sql` (adds `cve.u_estadoia`, `anexos.u_texto`, `srt.u_*ia*`, `u_rec_ia_outbox`, `u_rec_ia_crt`).
-2. Uncomment lab seed block; set `@LabRctStamp` to lab RCT; insert CRT-* weights.
-3. Ensure RCT has ≥1 row in `rctclb` **or** enable lab GO flags (below).
-4. Ensure CVE has CV anexo: `anexos.oritable='cve'`, `recstamp=cvestamp`, `tipo=1`, bytes in `bdados`.
-5. Know stamps: `cveStamp`, `rctStamp`, `srtStamp`.
-
-### 4.3 Config / env
-
-| Key | Where | Lab value |
-|-----|-------|-----------|
-| `ConnectionStrings:DBconnect` | `appsettings.json` / Development / user-secrets / env | demo SQL Server |
-| `RecruitmentIa:Enabled` | `true` | |
-| `RecruitmentIa:EnableCloudLlm` | **`false`** (v1 deterministic) | |
-| `RecruitmentIa:AllowLabEnqueueWithoutRctclb` | `false` unless GO Denilson lab exception | |
-| `RecruitmentIa:LabGoRef` | null or GO ref string | |
-| `DocumentTextExtraction:*` | OCR / Tesseract paths if PDFs scanned | |
-| `JWT:*` | valid secret for login | |
-| `ASPNETCORE_ENVIRONMENT` | `Development` | |
-
-User must have module pack **Gestão** (ModuleAuthorization for `/api/recruitment`).
-
-### 4.4 curl / HTTP attack plan
-
-Replace `BASE`, stamps, credentials.
-
-```bash
-BASE=http://localhost:7298
-
-# 0) Login
-TOKEN=$(curl -s -X POST "$BASE/api/auth/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"USER","password":"PASS"}' | jq -r '.token // .Token // .data.token')
-
-AUTH="Authorization: Bearer $TOKEN"
-
-# E1 — refuse: RCT without crt / without RCTCLB
-curl -s -X POST "$BASE/api/recruitment/enqueue" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"cveStamp":"CVE","rctStamp":"RCT_NO_CRT","srtStamp":"SRT"}' | jq .
-# Expect: enqueued=false, criteriaCount=0 (or intervenienteCount=0), NO new outbox row, u_estadoia not flipped to ok
-
-# A1 — happy path enqueue
-curl -s -X POST "$BASE/api/recruitment/enqueue" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"cveStamp":"CVE_OK","rctStamp":"RCT_LAB","srtStamp":"SRT_OK"}' | jq .
-# Expect: enqueued=true, outboxId set → watch Hangfire Recruitment.AnalyzeCandidate
-
-# Poll ranking
-curl -s "$BASE/api/recruitment/rct/RCT_LAB/ranking" -H "$AUTH" | jq .
-# Expect: scoreTotal>0, breakdown[].quote ⊆ anexos.u_texto, modelo/promptVer present (AH-07)
-
-# Compare #1 vs #k
-curl -s "$BASE/api/recruitment/rct/RCT_LAB/compare?firstSrtStamp=SRT1&otherSrtStamp=SRT2&topDiffCount=3" \
-  -H "$AUTH" | jq .
-
-# AH-02 falsifier (SQL after success)
-# UPDATE anexos SET u_texto = u_texto WHERE ...;  -- keep real text
-# Manually craft JSON in srt.u_justia with quote NOT in u_texto → RH falsifier / next job AssertQuoteIsSubset on reprocess
-# Prefer: enqueue CV without skill X → note=0 SemEvidencia (A2)
-
-# AH-08 — OCR fail
-# Use unscannable/empty CV bytes → enqueue → expect estadoIa=erro, scoreTotal=null, outbox error
-curl -s "$BASE/api/recruitment/rct/RCT_LAB/ranking" -H "$AUTH" | jq '.item.candidates[] | {srtStamp,estadoIa,scoreTotal}'
-
-# E2 — fail mid: Dashboard /hangfire → delete/fail processing job; assert outbox error/orphan + no selection side-effect
-# SQL: SELECT estado,apurado,entrevista,condp,u_scoreia,u_estadoia FROM srt/cve BEFORE/AFTER
-
-# Reprocess (BR-06)
-curl -s -X POST "$BASE/api/recruitment/reprocess" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"cveStamp":"CVE","rctStamp":"RCT","srtStamp":"SRT","requestedBy":"alfredo.dttest"}' | jq .
-
-# AH-04 sweep
-curl -s "$BASE/api/recruitment/hitl-copy" -H "$AUTH" | jq .
-rg -i 'seleccionad|rejeitad.*ia|avan[cç]ad.*ia|pela ia' src docs --glob '!**/bin/**'
-# Exclude intentional ban documentation in hitl-copy.note / ForbiddenPhrases / tests
-```
-
-### 4.5 SQL checks during attacks
-
-```sql
-SELECT cvestamp, u_estadoia FROM cve WHERE cvestamp = @cve;
-SELECT anexosstamp, LEFT(u_texto,200) FROM anexos WHERE oritable='cve' AND recstamp=@cve;
-SELECT srtstamp, u_scoreia, u_modeloia, u_promptveria, u_stampia, condp, estado, apurado, entrevista
-FROM srt WHERE srtstamp=@srt;
-SELECT id, estado, error_msg, heartbeat_at_utc FROM u_rec_ia_outbox WHERE srtstamp=@srt ORDER BY id DESC;
-SELECT * FROM u_rec_ia_crt WHERE rctstamp=@rct;
-```
-
-### 4.6 Fixture notes in repo
-
-`tests/Recruitment.Application.Tests/Fixtures/AlfredoDtTestFixtureNotes.cs` — demo OnTS_2BusinessIA checklist (quote ⊆ texto, OCR→erro/null score, condp/selection unchanged).
-
----
-
-## 5) Gaps blocking Pass Dinis
-
-Hard DoD from DTTest: if **≥1** of AH-02 / AH-04 / AH-08 fail live → **NÃO PASSA**. Static is green; live still open.
-
-| # | Gap | Severity | Why it blocks / delays Pass |
-|---|-----|----------|------------------------------|
-| G1 | **No live DTTest execution yet** (script: “execução quando houver ecrã/PR”) | P0 process | Static ≠ Pass Dinis |
-| G2 | **No PHC verification UI** in this repo (ranking API only; Triar/aceitar humano = PHC) | P0 UX | Checklist ecrã smoke unmet in-API |
-| G3 | **AH-02 read-path** does not re-check quotes vs `u_texto` | P1 | DB-tampered `u_justia` can still appear in ranking |
-| G4 | **E2 cancel** has no first-class API; fail-after-score-without-clear edge | P1 | Side-effect audit incomplete until live |
-| G5 | Soft enqueue refuse (**HTTP 200** + `enqueued:false`) | P2 | Clients may miss BR-01 refuse |
-| G6 | `PhcAvisoServiceStub` only logs — real `XcUtil.criaAvs` not wired | P1 BR-05 | Not full Analisar notify path |
-| G7 | Weights via **`u_rec_ia_crt` lab seed** — prod must mirror native RCT (Gate Dinis) | P0 prod | Lab OK; product Pass blocked if hardcode remains |
-| G8 | AH-04: `hitl-copy.note` + missing Unicode `avançado` | P2 | Naive A4 sweep / PT cedilla |
-| G9 | OCR/Tesseract host deps + real CV anexos on demo BD | P1 ops | AH-08 live needs illegible PDF fixture |
-| G10 | Module pack **Gestão** + JWT + `DBconnect` to demo BD | P1 ops | Alfredo blocked without lab auth/DB |
-| G11 | Folha AH itself: **“Não é Pass de produto”** — freeze host fila + GO Denilson still required for slice | P0 scope | Lab gate ≠ product Pass |
-
-### Static matrix (this report)
-
-| Ataque | Static | Live |
-|--------|--------|------|
-| AH-02 | **PASS** | TBD Alfredo |
-| AH-04 | **PASS*** (*notes G8) | TBD sweep UI/PHC |
-| AH-08 | **PASS** | TBD OCR fixture |
-| E1 | **PASS** | TBD |
-| E2 | **PARTIAL** | TBD Hangfire abort |
-| A1–A8 | unit covers A1/A2/A4/A5/A8 pieces | full script pending |
-
-**Veredicto gate (agora):** static pre-check **não bloqueia** arranque do lab DTTest; **Pass Dinis ainda NÃO** — falta evidência live + ecrã HITL PHC + fecho G3/G6/G7 conforme severidade.
-
-**Top 3 must-fix antes de demo Dinis:**
-
-1. Live AH-02 / AH-08 / A4 com dumps `u_texto` + ranking JSON.  
-2. Enqueue E1/E2 com before/after `condp|estado|apurado|entrevista`.  
-3. Confirm ranking surface RH (PHC or temporary HITL consumer) shows quotes + human actions.
-
-**Blocks demo?** Static code path: **não**. Live/process: **sim** until G1+G2+hard DoD live green.
-
----
-
-## File index (quick)
-
-```
-src/Modules/Pessoal/Recruitment/Recruitment.Presentation/REST/Controllers/RecruitmentIaController.cs
-src/Modules/Pessoal/Recruitment/Recruitment.Application/{Jobs,Scoring,Services,Features,DTOs,Options}/
-src/Modules/Pessoal/Recruitment/Recruitment.Infrastructure/{Repositories,Hangfire*,Notifications}/
-src/Modules/Pessoal/Recruitment/Recruitment.Domain/{Constants/IaEstados.cs,Entities,Repositories}/
-scripts/Recruitment_AddIaColumns.sql
-docs/modulos/Recrutamento-IA.md
-tests/Recruitment.Application.Tests/
-src/PHCAPI.Host/{Program.cs,appsettings.json,Properties/launchSettings.json}
-```
+**Known static gaps (not Fail on AH-02/04/08):** ranking read-path does not re-`AssertQuoteIsSubset` against live `u_texto` (`GetRctRankingQuery.cs` parse-only `:68-81`); `FailAsync` does not clear prior score; no cancel API; lab weights table `u_rec_ia_crt` (prod must mirror RCT).
