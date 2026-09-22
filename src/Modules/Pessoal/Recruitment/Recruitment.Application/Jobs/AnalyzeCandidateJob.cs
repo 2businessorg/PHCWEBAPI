@@ -15,7 +15,7 @@ namespace Recruitment.Application.Jobs;
 
 /// <summary>
 /// Hangfire job name: Recruitment.AnalyzeCandidate (BR-12 queue owner = PHCAPI.Host).
-/// Enforces AH-01…AH-08 and BR-02…BR-05 / BR-07 / BR-11 on the Analisar path.
+/// Enforces AH-01â€¦AH-08 and BR-02â€¦BR-05 / BR-07 / BR-11 on the Analisar path.
 /// </summary>
 public sealed class AnalyzeCandidateJob
 {
@@ -73,11 +73,40 @@ public sealed class AnalyzeCandidateJob
         var item = await _outbox.GetAsync(outboxId, ct)
             ?? throw new InvalidOperationException($"Outbox {outboxId} nao encontrada.");
 
+        try
+        {
+            await ExecuteCoreAsync(item, outboxId, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // E2 / AH-08: cancel/abort must ClearScore fully (not PARTIAL leftover).
+            await ClearScoreReliableAsync(item.SrtStamp, CancellationToken.None);
+            try
+            {
+                await _cveEstado.SetEstadoIaAsync(item.CveStamp, IaEstados.Erro, CancellationToken.None);
+                await _outbox.MarkErrorAsync(outboxId, "cancelado/abort", CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Cleanup apos cancel/abort falhou outbox={Id}", outboxId);
+            }
+
+            throw;
+        }
+    }
+
+    private async Task ClearScoreReliableAsync(string srtStamp, CancellationToken ct)
+    {
+        await _srtScores.ClearScoreOnOcrErrorAsync(srtStamp, ct);
+    }
+
+    private async Task ExecuteCoreAsync(Domain.Entities.RecruitmentOutboxItem item, long outboxId, CancellationToken ct)
+    {
         await _outbox.MarkProcessingAsync(outboxId, ct);
         await _outbox.HeartbeatAsync(outboxId, ct);
         await _cveEstado.SetEstadoIaAsync(item.CveStamp, IaEstados.Pendente, ct);
 
-        // Selection snapshot before job — BR-03 evidence for tests / ops diffs.
+        // Selection snapshot before job â€” BR-03 evidence for tests / ops diffs.
         var srtBefore = await _srtScores.GetByStampAsync(item.SrtStamp, ct);
         var selectionBefore = srtBefore?.SelectionStateSnapshot;
         var condpBefore = srtBefore?.Condp;
@@ -116,7 +145,7 @@ public sealed class AnalyzeCandidateJob
         if (!ocr.Success || string.IsNullOrWhiteSpace(ocr.Text))
         {
             // AH-08 / BR-07: estado_ia=erro, NO score invented.
-            await _srtScores.ClearScoreOnOcrErrorAsync(item.SrtStamp, ct);
+            await ClearScoreReliableAsync(item.SrtStamp, ct);
             await _cveEstado.SetEstadoIaAsync(item.CveStamp, IaEstados.Erro, ct);
             await _outbox.MarkErrorAsync(outboxId, ocr.Error ?? "OCR falhou ou u_texto vazio.", ct);
             await NotifyAsync(item, IaEstados.Erro, recipients, ct);
@@ -155,7 +184,7 @@ public sealed class AnalyzeCandidateJob
             return;
         }
 
-        // AH-02 kill: every note>0 must have quote ⊆ u_texto
+        // AH-02 kill: every note>0 must have quote âŠ† u_texto
         foreach (var row in score.Breakdown.Where(b => b.Note > 0))
         {
             RubricEvidenceScorer.AssertQuoteIsSubset(ocr.Text, row.Quote);
@@ -210,7 +239,9 @@ public sealed class AnalyzeCandidateJob
         await _outbox.MarkDoneAsync(outboxId, ct);
         await NotifyAsync(item, IaEstados.Ok, recipients, ct);
         await AssertNoSideEffectsAsync(item.SrtStamp, selectionBefore, condpBefore, ct);
+    
     }
+
 
     private async Task FailAsync(Domain.Entities.RecruitmentOutboxItem item, string message, CancellationToken ct)
     {

@@ -27,20 +27,25 @@ public static class OutboxEstados
 public static class HitlCopy
 {
     public const string RankingTitle =
-        "Ordenacao por score IA (input ao RH — nao e decisao)";
+        "Ordenacao por score IA (input ao RH -- nao e decisao)";
 
     public const string Footer =
         "Score IA = input. Decisao de avancar/rejeitar e so humana no PHC.";
 
     public const string SemEvidencia = "sem evidencia no CV";
 
-    /// <summary>Forbidden substrings (case-insensitive) — AH-04 kill case.</summary>
+    /// <summary>Forbidden substrings (case/accent-insensitive; pela IA | by AI) — AH-04 kill case.</summary>
     public static readonly string[] ForbiddenPhrases =
     [
         "seleccionado pela ia",
         "selecionado pela ia",
         "rejeitado pela ia",
         "avancado pela ia",
-        "avancada pela ia"
+        "avancada pela ia",
+        "seleccionado by ai",
+        "selecionado by ai",
+        "rejeitado by ai",
+        "avancado by ai",
+        "avancada by ai"
     ];
 }

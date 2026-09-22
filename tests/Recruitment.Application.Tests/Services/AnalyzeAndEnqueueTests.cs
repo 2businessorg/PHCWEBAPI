@@ -176,6 +176,75 @@ public class AnalyzeCandidateJobTests
         row.SelectionStateSnapshot.Should().Be("em-analise|0|nao");
     }
 
+
+    [Fact]
+    public async Task Execute_CancelAbort_ClearsScore_NotPartial()
+    {
+        var outboxId = 99L;
+        var item = new RecruitmentOutboxItem
+        {
+            Id = outboxId,
+            CveStamp = "CVE9",
+            RctStamp = "RCT9",
+            SrtStamp = "SRT9",
+            AnexoStamp = "ANX9",
+            Estado = OutboxEstados.Pending,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var outbox = new Mock<IRecruitmentOutboxRepository>();
+        outbox.Setup(x => x.GetAsync(outboxId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+
+        var anexos = new Mock<ICvAnexoRepository>();
+        anexos.Setup(x => x.GetCvAnexoAsync("CVE9", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CvAnexo
+            {
+                AnexoStamp = "ANX9",
+                CveStamp = "CVE9",
+                Bytes = [1, 2, 3],
+                FileName = "cv.pdf"
+            });
+
+        var srt = new Mock<ISrtScoreRepository>();
+        srt.Setup(x => x.GetByStampAsync("SRT9", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SrtCandidateRow
+            {
+                SrtStamp = "SRT9",
+                CveStamp = "CVE9",
+                RctStamp = "RCT9",
+                Condp = "nativo",
+                SelectionStateSnapshot = "aberto|0|0"
+            });
+
+        var cve = new Mock<ICveEstadoIaRepository>();
+        var criteria = new Mock<IRctCriteriaRepository>();
+        var intervenientes = new Mock<IRctIntervenienteRepository>();
+        intervenientes.Setup(x => x.GetIntervenientesAsync("RCT9", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new RctInterveniente { UserId = "1", DisplayName = "RH" }]);
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var extractor = new Mock<IDocumentTextExtractor>();
+        extractor.Setup(x => x.ExtractAsync(
+                It.IsAny<Stream>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        var avisos = new Mock<IPhcAvisoService>();
+        var scorer = new Mock<IRubricEvidenceScorer>();
+
+        var job = CreateJob(outbox, anexos, criteria, intervenientes, srt, cve, extractor, scorer.Object, avisos);
+
+        var act = async () => await job.ExecuteAsync(outboxId, cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+
+        srt.Verify(x => x.ClearScoreOnOcrErrorAsync("SRT9", It.IsAny<CancellationToken>()), Times.Once);
+        srt.Verify(x => x.SaveScoreAsync(
+            It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<string>(),
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        cve.Verify(x => x.SetEstadoIaAsync("CVE9", IaEstados.Erro, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
     private static AnalyzeCandidateJob CreateJob(
         Mock<IRecruitmentOutboxRepository> outbox,
         Mock<ICvAnexoRepository> anexos,
@@ -253,5 +322,86 @@ public class RecruitmentEnqueueServiceTests
             Mock.Of<ICveEstadoIaRepository>(),
             Microsoft.Extensions.Options.Options.Create(new RecruitmentIaOptions()),
             NullLogger<RecruitmentEnqueueService>.Instance);
+    }
+}
+
+
+public class GetRctRankingQuoteGuardTests
+{
+    [Fact]
+    public async Task Handle_InventedStoredQuote_ThrowsAh02_AgainstCurrentUTexto()
+    {
+        var srt = new Mock<ISrtScoreRepository>();
+        srt.Setup(x => x.GetByRctAsync("RCT-Q", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new SrtCandidateRow
+                {
+                    SrtStamp = "SRT-Q",
+                    CveStamp = "CVE-Q",
+                    RctStamp = "RCT-Q",
+                    CandidateName = "Ana",
+                    ScoreIa = 40,
+                    JustificationJson =
+                        """{"breakdown":[{"code":"CRT-X","label":"X","note":10,"quote":"frase inventada que nao esta no CV"}]}"""
+                }
+            ]);
+
+        var anexos = new Mock<ICvAnexoRepository>();
+        anexos.Setup(x => x.GetCvAnexoAsync("CVE-Q", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CvAnexo
+            {
+                AnexoStamp = "ANX-Q",
+                CveStamp = "CVE-Q",
+                Bytes = [1],
+                Texto = "texto real do CV sem a citacao inventada"
+            });
+
+        var sut = new Recruitment.Application.Features.GetRctRanking.GetRctRankingQueryHandler(srt.Object, anexos.Object);
+
+        var act = async () => await sut.Handle(
+            new Recruitment.Application.Features.GetRctRanking.GetRctRankingQuery("RCT-Q"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*AH-02*");
+    }
+
+    [Fact]
+    public async Task Handle_QuoteSubsetOfCurrentUTexto_Succeeds()
+    {
+        const string uTexto = "Tecnico de suporte ERP PHC com SQL.";
+        var srt = new Mock<ISrtScoreRepository>();
+        srt.Setup(x => x.GetByRctAsync("RCT-OK", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new SrtCandidateRow
+                {
+                    SrtStamp = "SRT-OK",
+                    CveStamp = "CVE-OK",
+                    RctStamp = "RCT-OK",
+                    CandidateName = "Bruno",
+                    ScoreIa = 22,
+                    JustificationJson =
+                        """{"breakdown":[{"code":"CRT-STACK","label":"Stack","note":10,"quote":"suporte ERP PHC"}]}"""
+                }
+            ]);
+
+        var anexos = new Mock<ICvAnexoRepository>();
+        anexos.Setup(x => x.GetCvAnexoAsync("CVE-OK", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CvAnexo
+            {
+                AnexoStamp = "ANX-OK",
+                CveStamp = "CVE-OK",
+                Bytes = [1],
+                Texto = uTexto
+            });
+
+        var sut = new Recruitment.Application.Features.GetRctRanking.GetRctRankingQueryHandler(srt.Object, anexos.Object);
+        var dto = await sut.Handle(
+            new Recruitment.Application.Features.GetRctRanking.GetRctRankingQuery("RCT-OK"),
+            CancellationToken.None);
+
+        dto.Candidates.Should().HaveCount(1);
+        dto.Candidates[0].Breakdown.Single().Quote.Should().Be("suporte ERP PHC");
     }
 }

@@ -82,7 +82,7 @@ public class RubricEvidenceScorerTests
     {
         var cv =
             "Experiencia de 3 anos em suporte ERP. " +
-            "Mais tarde refere 10 anos de suporte ERP sénior.";
+            "Mais tarde refere 10 anos de suporte ERP sÃ©nior.";
 
         var criteria = new[]
         {
@@ -120,10 +120,22 @@ public class ForbiddenCopyGuardTests
     [Theory]
     [InlineData("Candidato seleccionado pela IA")]
     [InlineData("Rejeitado pela IA automaticamente")]
+    [InlineData("Rejeitado by AI automaticamente")]
     [InlineData("Avancado pela IA para entrevista")]
+    [InlineData("Candidato avãnçado pela IA")]
+    [InlineData("Candidato avãnçado by AI")]
     public void ContainsForbiddenPhrase_DetectsAh04(string text)
     {
         ForbiddenCopyGuard.ContainsForbiddenPhrase(text).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsForbiddenPhrase_AccentedAvancado_FailsIfGuardAsciiOnly()
+    {
+        // Dinis CONDICIONA / Alfredo DTTest: weak ASCII-only guard must fail this case.
+        var text = "Candidato avãnçado pela IA";
+        ForbiddenCopyGuard.ContainsForbiddenPhrase(text).Should().BeTrue();
+        ForbiddenCopyGuard.Normalize(text).Should().Contain("avancado pela ia");
     }
 
     [Fact]

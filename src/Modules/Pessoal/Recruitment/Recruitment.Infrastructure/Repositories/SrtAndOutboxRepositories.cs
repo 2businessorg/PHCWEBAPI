@@ -43,7 +43,7 @@ public sealed class SrtScoreRepository : ISrtScoreRepository
         string? auditJson,
         CancellationToken ct = default)
     {
-        // BR-02/03/04: UPDATE only IA columns — never condp / selection state.
+        // BR-02/03/04: UPDATE only IA columns â€” never condp / selection state.
         var sql = $"""
             UPDATE [{_schema.SrtTable}]
             SET [{_schema.SrtScoreIaColumn}] = @score,
@@ -76,7 +76,8 @@ public sealed class SrtScoreRepository : ISrtScoreRepository
                 [{_schema.SrtJustIaColumn}] = NULL,
                 [{_schema.SrtModeloIaColumn}] = NULL,
                 [{_schema.SrtPromptVerIaColumn}] = NULL,
-                [{_schema.SrtStampIaColumn}] = NULL
+                [{_schema.SrtStampIaColumn}] = NULL,
+                [{_schema.SrtAuditIaColumn}] = NULL
             WHERE [{_schema.SrtStampColumn}] = @srt
             """;
 
