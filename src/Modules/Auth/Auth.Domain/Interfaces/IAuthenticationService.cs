@@ -89,6 +89,6 @@ public class AuthenticationResult
             throw new InvalidOperationException("Database credentials are not set in authentication result");
         }
 
-        return $"Server={DbServer};Database={DbDatabase};User Id={DbUserId};Password=YOUR_PASSWORD;Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;";
+        return $"Server={DbServer};Database={DbDatabase};User Id={DbUserId};Password={DbPassword};Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;";
     }
 }

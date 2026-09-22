@@ -55,7 +55,7 @@ public class PhcWebCredentialsProvider : IPhcWebCredentialsProvider
                 throw new InvalidOperationException("No DbUserId available in current tenant context");
             }
 
-            var password = YOUR_PASSWORD;
+            var password = _tenantContext.DbPassword;
             if (string.IsNullOrEmpty(password))
             {
                 throw new InvalidOperationException("No DbPassword available in current tenant context");
@@ -69,7 +69,7 @@ public class PhcWebCredentialsProvider : IPhcWebCredentialsProvider
             {
                 PhcWebUrl = phcUrl,
                 Username = username,
-                Password = YOUR_PASSWORD
+                Password = password
             };
         }
         catch (Exception ex)

@@ -101,7 +101,7 @@ public class PhcWebService : IPhcWebServiceDossiers
             var credentials = await _credentialsProvider.GetCredentialsAsync(cancellationToken);
             var phcUrl = credentials.PhcWebUrl;
             var phcUsername = credentials.Username;
-            var phcPassword = YOUR_PASSWORD;
+            var phcPassword = credentials.Password;
             var phcScriptCode = _configuration["PhcWeb:Scripts:InsertBo:Code"]
                 ?? throw new InvalidOperationException("PhcWeb:Scripts:InsertBo:Code não configurado");
 

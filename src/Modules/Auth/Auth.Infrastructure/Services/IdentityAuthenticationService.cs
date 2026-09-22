@@ -329,7 +329,7 @@ public class IdentityAuthenticationService : IAuthenticationService
                 DbServer = appLicense.DbServer,
                 DbDatabase = appLicense.DbDatabase,
                 DbUserId = appLicense.DbUserId,
-                DbPassword = YOUR_PASSWORD
+                DbPassword = appLicense.DbPassword
             };
         }
         catch (Exception ex)
