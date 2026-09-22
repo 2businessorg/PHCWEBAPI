@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Recruitment.Application.Jobs;
 using Recruitment.Application.Scoring;
+using Recruitment.Application.Privacy;
 using Recruitment.Application.Services;
 
 namespace Recruitment.Application;
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.AddSingleton<IRubricEvidenceScorer, RubricEvidenceScorer>();
         services.AddScoped<IRecruitmentEnqueueService, RecruitmentEnqueueService>();
+        services.AddScoped<IRecruitmentCloudEgressGuard, RecruitmentCloudEgressGuard>();
         services.AddScoped<AnalyzeCandidateJob>();
 
         return services;

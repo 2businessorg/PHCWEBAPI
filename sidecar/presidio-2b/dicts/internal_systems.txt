@@ -1,0 +1,4 @@
+# Placeholder internal system names for lab only — NEVER commit real client systems.
+LabInternalERP
+DemoCRM
+FakeHRIS
