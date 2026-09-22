@@ -53,6 +53,13 @@
     <Project Path="src/Modules/Gestao/Stocks/Stocks.Infrastructure/Stocks.Infrastructure.csproj" />
     <Project Path="src/Modules/Gestao/Stocks/Stocks.Presentation/Stocks.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Pessoal/" />
+  <Folder Name="/src/Modules/Pessoal/Recruitment/">
+    <Project Path="src/Modules/Pessoal/Recruitment/Recruitment.Application/Recruitment.Application.csproj" />
+    <Project Path="src/Modules/Pessoal/Recruitment/Recruitment.Domain/Recruitment.Domain.csproj" />
+    <Project Path="src/Modules/Pessoal/Recruitment/Recruitment.Infrastructure/Recruitment.Infrastructure.csproj" />
+    <Project Path="src/Modules/Pessoal/Recruitment/Recruitment.Presentation/Recruitment.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/TabelasGerais/">
     <Project Path="src/Modules/TabelasGerais/Parameters/Parameters.Application/Parameters.Application.csproj" />
     <Project Path="src/Modules/TabelasGerais/Parameters/Parameters.Domain/Parameters.Domain.csproj" />
@@ -88,6 +95,8 @@
     <Project Path="tests/Parameters.Application.Tests/Parameters.Application.Tests.csproj" />
     <Project Path="tests/Dossiers.Application.Tests/Dossiers.Application.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Tests/Shared.Infrastructure.Tests.csproj" />
+    <Project Path="tests/Recruitment.Application.Tests/Recruitment.Application.Tests.csproj" />
+    <Project Path="tests/Treasury.Application.Tests/Treasury.Application.Tests.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/Architecture.md" />
