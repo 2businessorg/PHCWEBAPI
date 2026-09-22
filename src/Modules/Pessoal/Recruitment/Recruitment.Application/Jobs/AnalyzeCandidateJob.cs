@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Recruitment.Application.DTOs;
 using Recruitment.Application.Options;
+using Recruitment.Application.Privacy;
 using Recruitment.Application.Scoring;
 using Recruitment.Application.Services;
 using Recruitment.Domain.Constants;
@@ -37,6 +38,7 @@ public sealed class AnalyzeCandidateJob
     private readonly IRubricEvidenceScorer _scorer;
     private readonly IPhcAvisoService _avisos;
     private readonly IOptions<RecruitmentIaOptions> _options;
+    private readonly IRecruitmentCloudEgressGuard _cloudEgress;
     private readonly ILogger<AnalyzeCandidateJob> _logger;
 
     public AnalyzeCandidateJob(
@@ -50,6 +52,7 @@ public sealed class AnalyzeCandidateJob
         IRubricEvidenceScorer scorer,
         IPhcAvisoService avisos,
         IOptions<RecruitmentIaOptions> options,
+        IRecruitmentCloudEgressGuard cloudEgress,
         ILogger<AnalyzeCandidateJob> logger)
     {
         _outbox = outbox;
@@ -62,6 +65,7 @@ public sealed class AnalyzeCandidateJob
         _scorer = scorer;
         _avisos = avisos;
         _options = options;
+        _cloudEgress = cloudEgress;
         _logger = logger;
     }
 
@@ -155,13 +159,27 @@ public sealed class AnalyzeCandidateJob
 
         await _anexos.SaveTextoAsync(anexo.AnexoStamp, ocr.Text, ct);
 
-        if (_options.Value.EnableCloudLlm)
+        var egress = await _cloudEgress.PrepareAsync(
+            sessionId: item.SrtStamp,
+            documentId: anexo.AnexoStamp,
+            plainText: ocr.Text!,
+            cancellationToken: ct);
+        if (_options.Value.EnableCloudLlm && !egress.EgressAllowed)
         {
-            // Soft gate: v1 path remains deterministic unless GO + future adapter.
             _logger.LogWarning(
-                "EnableCloudLlm=true but v1 uses deterministic rubric only (BR-08/BR-11). outbox={Id}",
+                "EnableCloudLlm=true but cloud egress refused (Presidio/leak/GO path). reason={Reason} outbox={Id}. Continuing on-prem rubric (BR-08/BR-11).",
+                egress.FailureReason,
                 outboxId);
         }
+        else if (egress.EgressAllowed)
+        {
+            // No cloud LLM client in v1 - GO Denilson still required before enabling a real caller.
+            _logger.LogWarning(
+                "Pseudonymized egress ready but no cloud LLM client wired in v1 (BR-08). outbox={Id} entities={Count}",
+                outboxId,
+                egress.Result?.Entities.Count ?? 0);
+        }
+
 
         var criteria = await _criteria.GetUsableCriteriaAsync(item.RctStamp, ct);
         if (criteria.Count < 1)
