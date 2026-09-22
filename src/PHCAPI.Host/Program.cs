@@ -28,6 +28,7 @@ using Shared.Kernel.Authorization;
 using Auth.Infrastructure.Persistence;
 using System.Threading.RateLimiting;
 using PHCAPI.Host.Extensions;
+using Shared.Infrastructure.DocumentTextExtraction;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -131,7 +132,8 @@ try
     // Configuration loaded from appsettings.json > RateLimiting section
     builder.Services.AddConfigurableRateLimiting(builder.Configuration);
 
-   
+    // Shared platform: PDF/DOCX/image text extraction (+ optional Tesseract OCR)
+    builder.Services.AddDocumentTextExtraction(builder.Configuration);
 
     builder.Services.AddParametersPresentation(
         builder.Configuration,

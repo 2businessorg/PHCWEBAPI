@@ -97,7 +97,7 @@ public class TenantContext : ITenantContext
             throw new InvalidOperationException("No database credentials available for current tenant");
         }
 
-        return $"Server={_dbServer};Database={_dbDatabase};User Id={_dbUserId};Password=YOUR_PASSWORD;Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;";
+        return $"Server={_dbServer};Database={_dbDatabase};User Id={_dbUserId};Password={_dbPassword};Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;";
     }
 
     private void EnsureInitialized()
@@ -119,7 +119,7 @@ public class TenantContext : ITenantContext
         _dbServer = DecryptClaim(user, "db_server");
         _dbDatabase = DecryptClaim(user, "db_database");
         _dbUserId = DecryptClaim(user, "db_userid");
-        _dbPassword = YOUR_PASSWORD "db_password");
+        _dbPassword = DecryptClaim(user, "db_password");
 
         // Cache credentials check result
         _hasCredentials = !string.IsNullOrEmpty(_dbServer) 

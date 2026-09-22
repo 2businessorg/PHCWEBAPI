@@ -87,11 +87,13 @@
   <Folder Name="/tests/">
     <Project Path="tests/Parameters.Application.Tests/Parameters.Application.Tests.csproj" />
     <Project Path="tests/Dossiers.Application.Tests/Dossiers.Application.Tests.csproj" />
+    <Project Path="tests/Shared.Infrastructure.Tests/Shared.Infrastructure.Tests.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/Architecture.md" />
     <File Path="docs/COMO-EXECUTAR-PHCAPI.md" />
     <File Path="docs/Standard-Modules-Management-GUIDE.md" />
+    <File Path="docs/shared/DocumentTextExtraction.md" />
     <File Path="docs/modulos/modulo Dossiers.md" />
     <File Path="docs/modulos/modulo Faturas.md" />
     <File Path="docs/modulos/modulo Stocks.md" />

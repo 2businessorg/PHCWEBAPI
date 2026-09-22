@@ -131,6 +131,6 @@ public class AppLicense
     public string GetConnectionString()
     {
         // Format: "Server=192.168.0.25\SQLDEV2022;Database=ONBD_2BMasterPAX;User Id=YOUR_USER;Password=YOUR_PASSWORD;Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;"
-        return $"Server={DbServer};Database={DbDatabase};User Id={DbUserId};Password=YOUR_PASSWORD;Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;";
+        return $"Server={DbServer};Database={DbDatabase};User Id={DbUserId};Password={DbPassword};Trusted_Connection=False;MultipleActiveResultSets=true;TrustServerCertificate=True;";
     }
 }
