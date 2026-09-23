@@ -12,7 +12,7 @@ namespace Recruitment.Application.Scoring;
 /// </summary>
 public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 {
-    public const string PromptVer = "qwen-cloud-v3";
+    public const string PromptVer = "qwen-cloud-v4";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -86,13 +86,14 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         "Se note>0, quote e uma citacao contigua exacta do texto (maximo 240 caracteres). " +
         "Se nao ha evidencia, note=0, quote vazio, justificationPt=\"sem evidencia no CV\". " +
         "Justificacao em pt-PT. Nao inventes factos fora do texto. " +
-        "O score e input ao RH. A sugestao assistida usa so decision avancar, em_duvida ou nao_avancar. " +
-        "Sem evidencia ou conflito no criterio: a sugestao e em_duvida. " +
+        "O score e input ao RH. decision so pode ser shortlist_suggest, interview_suggest, weak_fit_suggest, insufficient_evidence ou conflict_review. " +
+        "Conflito no criterio: conflict_review. Sem evidencia: insufficient_evidence. " +
+        "Nao uses selected, rejected, advanced, hired, approved, pass ou fail. " +
         "Pesos sao os da lista. Nao inventes pesos nem criterios. " +
         "Nao escrevas nomes, emails ou telefones. " +
         "strengthsPt: 1 a 5 frases curtas. interviewValidationQuestionPt: uma pergunta. rationalePt: justificacao curta da sugestao. " +
         "Formato: {\"criteria\":[{\"code\":\"\",\"note\":0,\"quote\":\"\",\"justificationPt\":\"\",\"conflito\":false}]," +
-        "\"recommendation\":{\"decision\":\"em_duvida\",\"rationalePt\":\"\"}," +
+        "\"recommendation\":{\"decision\":\"insufficient_evidence\",\"rationalePt\":\"\"}," +
         "\"strengthsPt\":[\"\"],\"interviewValidationQuestionPt\":\"\"}";
 
     internal static string BuildUserPrompt(string evidenceText, IReadOnlyList<RctCriterion> criteria)
@@ -175,8 +176,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         System.Text.RegularExpressions.RegexOptions.Compiled);
 
     /// <summary>
-    /// Model decision is kept only when it is avancar, em_duvida, or nao_avancar.
-    /// Any other token is dropped and is not copied into the score.
+    /// Model decision is kept only for the five assisted tokens.
+    /// selected, rejected, hired, approved, auto_*, pass and fail are dropped.
     /// </summary>
     public static string? ReadAllowedDecision(string? content)
     {

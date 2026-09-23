@@ -68,7 +68,7 @@ public class QwenCloudScoreTests
         score.UsedLlm.Should().BeTrue();
         score.EngineName.Should().Be("qwen3-coder-next");
         score.PromptVer.Should().Be(QwenCloudScoreEngine.PromptVer);
-        score.AssistedDecision.Should().Be(AssistedDecisions.Avancar);
+        score.AssistedDecision.Should().Be(AssistedDecisions.InterviewSuggest);
         score.Breakdown.Single().Quote.Should().Be(Quote);
         score.Breakdown.Single().Weight.Should().Be(25);
         score.RationalePt.Should().Be("Ajuste assistido com base nas citacoes.");
@@ -79,18 +79,20 @@ public class QwenCloudScoreTests
     }
 
     [Theory]
-    [InlineData("avancar", "avancar")]
-    [InlineData("em_duvida", "em_duvida")]
-    [InlineData("nao_avancar", "nao_avancar")]
-    [InlineData("shortlist_suggest", null)]
-    [InlineData("interview_suggest", null)]
-    [InlineData("weak_fit_suggest", null)]
-    [InlineData("insufficient_evidence", null)]
-    [InlineData("conflict_review", null)]
+    [InlineData("shortlist_suggest", "shortlist_suggest")]
+    [InlineData("interview_suggest", "interview_suggest")]
+    [InlineData("weak_fit_suggest", "weak_fit_suggest")]
+    [InlineData("insufficient_evidence", "insufficient_evidence")]
+    [InlineData("conflict_review", "conflict_review")]
+    [InlineData("avancar", null)]
+    [InlineData("em_duvida", null)]
+    [InlineData("nao_avancar", null)]
     [InlineData("hire", null)]
     [InlineData("reject", null)]
     [InlineData("selected", null)]
     [InlineData("rejected", null)]
+    [InlineData("advanced", null)]
+    [InlineData("hired", null)]
     [InlineData("approved", null)]
     [InlineData("auto_advance", null)]
     [InlineData("pass", null)]
@@ -119,7 +121,7 @@ public class QwenCloudScoreTests
             [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
             CancellationToken.None);
 
-        score.AssistedDecision.Should().Be(AssistedDecisions.Avancar);
+        score.AssistedDecision.Should().Be(AssistedDecisions.InterviewSuggest);
         AssistedDecisions.IsAllowed(score.AssistedDecision).Should().BeTrue();
     }
 
@@ -130,17 +132,19 @@ public class QwenCloudScoreTests
         [
             Row("CRT-A", 25, 20, Quote, conflito: true)
         ]);
-        conflict.Decision.Should().Be(AssistedDecisions.EmDuvida);
+        conflict.Decision.Should().Be(AssistedDecisions.ConflictReview);
         conflict.Criteria.Single().Status.Should().Be(AssistedDecisions.StatusConflict);
         conflict.Conflicts.Single().Code.Should().Be("CRT-A");
-        conflict.LabelPt.Should().Be("Sugestão: em dúvida — decisão humana obrigatória");
+        conflict.Conflicts.Single().Quotes.Should().Contain(Quote);
+        conflict.LabelPt.Should().Be("Sugestão: rever conflito — decisão humana obrigatória");
+        conflict.LabelPt.Should().Contain("Sugestão").And.Contain("decisão humana obrigatória");
         conflict.DecisionNote.Should().Be(HitlCopy.AssistedDisclaimerPt);
 
         var missing = AssistedRecommendationBuilder.Build(
         [
             Row("CRT-A", 25, 0, null, conflito: false)
         ]);
-        missing.Decision.Should().Be(AssistedDecisions.EmDuvida);
+        missing.Decision.Should().Be(AssistedDecisions.InsufficientEvidence);
         missing.Criteria.Single().Status.Should().Be(AssistedDecisions.StatusNoEvidence);
         missing.GapsPt.Should().NotBeEmpty();
 
@@ -148,10 +152,23 @@ public class QwenCloudScoreTests
         [
             Row("CRT-A", 25, 8, Quote, conflito: false)
         ]);
-        weak.Decision.Should().Be(AssistedDecisions.NaoAvancar);
+        weak.Decision.Should().Be(AssistedDecisions.WeakFitSuggest);
         weak.Criteria.Single().Status.Should().Be(AssistedDecisions.StatusEvidenced);
-        weak.LabelPt.Should().Be("Sugestão: não avançar — decisão humana obrigatória");
+        weak.LabelPt.Should().Be("Sugestão: ajuste fraco — decisão humana obrigatória");
         weak.Criteria.Single().WeightSource.Should().Be("rct");
+
+        var interview = AssistedRecommendationBuilder.Build(
+        [
+            Row("CRT-A", 25, 18, Quote, conflito: false)
+        ]);
+        interview.Decision.Should().Be(AssistedDecisions.InterviewSuggest);
+
+        var shortlist = AssistedRecommendationBuilder.Build(
+        [
+            Row("CRT-A", 25, 22, Quote, conflito: false)
+        ]);
+        shortlist.Decision.Should().Be(AssistedDecisions.ShortlistSuggest);
+        shortlist.LabelPt.Should().Contain("Sugestão").And.Contain("decisão humana obrigatória");
     }
 
     private static CriterionScoreBreakdown Row(string code, decimal weight, decimal note, string? quote, bool conflito) =>
@@ -217,7 +234,9 @@ public class QwenCloudScoreTests
         back.Should().NotBeNull();
         back!.UsedLlm.Should().BeTrue();
         back.TotalScore.Should().Be(20);
-        back.Recommendation!.Decision.Should().Be(AssistedDecisions.Avancar);
+        back.Recommendation!.Decision.Should().Be(AssistedDecisions.InterviewSuggest);
+        back.ScoreIsInputNotDecision.Should().BeTrue();
+        back.HumanDecisionRequired.Should().BeTrue();
         back.Recommendation.RationalePt.Should().Be("Ajuste assistido com base nas citacoes.");
         back.StrengthsPt.Should().ContainSingle();
         back.InterviewValidationQuestionPt.Should().NotBeNullOrWhiteSpace();
@@ -375,7 +394,7 @@ public class QwenCloudScoreTests
         audit.Should().Contain("PERSON");
         audit.Should().Contain("EMAIL_ADDRESS");
         audit.Should().Contain("\"leak_check_passed\":true");
-        audit.Should().Contain("qwen-cloud-v3");
+        audit.Should().Contain("qwen-cloud-v4");
         audit.Should().Contain("\"modelName\":\"qwen3-coder-next\"");
         audit.Should().Contain("\"usedLlm\":true");
         audit.Should().Contain("\"entityTypeCounts\"");
@@ -386,9 +405,12 @@ public class QwenCloudScoreTests
         audit.Should().NotContain("maria@example.com");
         userPrompt.Should().Contain(Pseudo);
         userPrompt.Should().NotContain(RawSecret);
-        justification.Should().Contain("\"decision\":\"avancar\"");
-        justification.Should().Contain("Sugestão: avançar — decisão humana obrigatória");
+        justification.Should().Contain("\"decision\":\"interview_suggest\"");
+        justification.Should().Contain("Sugestão: marcar entrevista — decisão humana obrigatória");
         justification.Should().Contain(HitlCopy.AssistedDisclaimerPt);
+        justification.Should().NotContain("\"decision\":\"avancar\"");
+        justification.Should().NotContain("\"decision\":\"selected\"");
+        justification.Should().NotContain("\"decision\":\"hired\"");
         justification.Should().Contain("\"humanDecisionRequired\":true");
         justification.Should().Contain("\"scoreIsInputNotDecision\":true");
         justification.Should().Contain("\"status\":\"evidenced\"");
@@ -403,7 +425,7 @@ public class QwenCloudScoreTests
         justification.Should().Contain("Ajuste assistido com base nas citacoes.");
         justification.Should().NotContain("shortlist_suggest");
         justification.Should().NotContain("hire");
-        justification.Should().NotContain("entrevista");
+        justification.Should().NotContain("\"decision\":\"entrevista\"");
         justification.Should().NotContain("\"weight\":99");
         justification.Should().NotContain(RawSecret);
         rubric.Verify(x => x.Score(It.IsAny<string?>(), It.IsAny<IReadOnlyList<RctCriterion>>()), Times.Never);

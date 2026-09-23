@@ -42,7 +42,7 @@ public static class HitlCopy
 
     /// <summary>Assisted recommendation copy. Not a PHC decision (AH-04).</summary>
     public const string AssistedDisclaimerPt =
-        "recomendação assistida — decisão humana no PHC";
+        "Score e recomendação = input; não é selecção, rejeição ou avanço; decisão só humana no PHC.";
 
     /// <summary>
     /// HITL ranking is the human pre-selection list. IA does not decide.

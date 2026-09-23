@@ -224,7 +224,7 @@ public sealed class JustificationPayloadDto
     public IReadOnlyList<CriterionBreakdownDto> Breakdown { get; init; } = Array.Empty<CriterionBreakdownDto>();
 }
 
-/// <summary>Assisted suggestion. decision is only avancar | em_duvida | nao_avancar.</summary>
+/// <summary>Assisted suggestion. decision is only shortlist_suggest, interview_suggest, weak_fit_suggest, insufficient_evidence, or conflict_review.</summary>
 public sealed class AssistedRecommendationDto
 {
     [JsonPropertyName("decision")]
