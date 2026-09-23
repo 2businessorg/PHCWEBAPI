@@ -35,7 +35,7 @@ public sealed class AnalyzeCandidateJob
     private readonly ISrtScoreRepository _srtScores;
     private readonly ICveEstadoIaRepository _cveEstado;
     private readonly IDocumentTextExtractor _textExtractor;
-    private readonly IRubricEvidenceScorer _scorer;
+    private readonly ICandidateScoreEngineSelector _engines;
     private readonly IPhcAvisoService _avisos;
     private readonly IOptions<RecruitmentIaOptions> _options;
     private readonly IRecruitmentCloudEgressGuard _cloudEgress;
@@ -49,7 +49,7 @@ public sealed class AnalyzeCandidateJob
         ISrtScoreRepository srtScores,
         ICveEstadoIaRepository cveEstado,
         IDocumentTextExtractor textExtractor,
-        IRubricEvidenceScorer scorer,
+        ICandidateScoreEngineSelector engines,
         IPhcAvisoService avisos,
         IOptions<RecruitmentIaOptions> options,
         IRecruitmentCloudEgressGuard cloudEgress,
@@ -62,7 +62,7 @@ public sealed class AnalyzeCandidateJob
         _srtScores = srtScores;
         _cveEstado = cveEstado;
         _textExtractor = textExtractor;
-        _scorer = scorer;
+        _engines = engines;
         _avisos = avisos;
         _options = options;
         _cloudEgress = cloudEgress;
@@ -164,22 +164,22 @@ public sealed class AnalyzeCandidateJob
             documentId: anexo.AnexoStamp,
             plainText: ocr.Text!,
             cancellationToken: ct);
-        if (_options.Value.EnableCloudLlm && !egress.EgressAllowed)
-        {
-            _logger.LogWarning(
-                "EnableCloudLlm=true but cloud egress refused (Presidio/leak/GO path). reason={Reason} outbox={Id}. Continuing on-prem rubric (BR-08/BR-11).",
-                egress.FailureReason,
-                outboxId);
-        }
-        else if (egress.EgressAllowed)
-        {
-            // No cloud LLM client in v1 - GO Denilson still required before enabling a real caller.
-            _logger.LogWarning(
-                "Pseudonymized egress ready but no cloud LLM client wired in v1 (BR-08). outbox={Id} entities={Count}",
-                outboxId,
-                egress.Result?.Entities.Count ?? 0);
-        }
 
+        if (_engines.CloudEnabled && !egress.EgressAllowed)
+        {
+            var reason = string.IsNullOrWhiteSpace(egress.FailureReason)
+                ? "BR-08/BR-11: egress Presidio recusado."
+                : $"BR-08/BR-11: {egress.FailureReason}";
+            _logger.LogWarning(
+                "Cloud egress refused. outbox={Id} reason={Reason}",
+                outboxId,
+                egress.FailureReason);
+            await ClearScoreReliableAsync(item.SrtStamp, ct);
+            await FailAsync(item, reason, ct);
+            await NotifyAsync(item, IaEstados.Erro, recipients, ct);
+            await AssertNoSideEffectsAsync(item.SrtStamp, selectionBefore, condpBefore, ct);
+            return;
+        }
 
         var criteria = await _criteria.GetUsableCriteriaAsync(item.RctStamp, ct);
         if (criteria.Count < 1)
@@ -189,23 +189,39 @@ public sealed class AnalyzeCandidateJob
             return;
         }
 
+        var evidenceText = _engines.CloudEnabled
+            ? egress.PseudonymizedText ?? string.Empty
+            : ocr.Text!;
+        if (_engines.CloudEnabled && string.IsNullOrWhiteSpace(evidenceText))
+        {
+            await ClearScoreReliableAsync(item.SrtStamp, ct);
+            await FailAsync(item, "BR-08: texto pseudonimizado vazio.", ct);
+            await NotifyAsync(item, IaEstados.Erro, recipients, ct);
+            await AssertNoSideEffectsAsync(item.SrtStamp, selectionBefore, condpBefore, ct);
+            return;
+        }
+
         AnalysisScoreResult score;
         try
         {
-            score = _scorer.Score(ocr.Text, criteria);
+            score = await _engines.Resolve().ScoreAsync(evidenceText, criteria, ct);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Score falhou outbox={OutboxId}", outboxId);
-            await FailAsync(item, ex.Message, ct);
+            _logger.LogError(ex, "Score falhou outbox={OutboxId} cloud={Cloud}", outboxId, _engines.CloudEnabled);
+            var message = ScoreFailureMessage(ex);
+            if (_engines.CloudEnabled)
+                await ClearScoreReliableAsync(item.SrtStamp, ct);
+            await FailAsync(item, message, ct);
             await NotifyAsync(item, IaEstados.Erro, recipients, ct);
             return;
         }
 
-        // AH-02 kill: every note>0 must have quote âŠ† u_texto
+        // AH-02: note>0 quote must be a subset of the text that was scored
+        // (raw OCR offline, pseudonymized text when Qwen ran).
         foreach (var row in score.Breakdown.Where(b => b.Note > 0))
         {
-            RubricEvidenceScorer.AssertQuoteIsSubset(ocr.Text, row.Quote);
+            RubricEvidenceScorer.AssertQuoteIsSubset(evidenceText, row.Quote);
             ForbiddenCopyGuard.ThrowIfForbidden(row.JustificationPt, row.Code);
         }
 
@@ -234,13 +250,18 @@ public sealed class AnalyzeCandidateJob
         var json = JsonSerializer.Serialize(payload, JsonOptions);
         ForbiddenCopyGuard.ThrowIfForbidden(json, "justificationJson");
 
-        var audit = JsonSerializer.Serialize(new
+        if (score.UsedLlm)
         {
-            outbox_id = outboxId,
-            analyzed_utc = score.StampUtc,
-            host = _options.Value.QueueHostName,
-            ah = "AH-01..AH-08 enforced"
-        }, JsonOptions);
+            _logger.LogInformation(
+                "Qwen score outbox={Id} model={Model} egressAllowed={Allowed} entityCount={Count} leakCheckPassed={Leak}",
+                outboxId,
+                score.EngineName,
+                egress.EgressAllowed,
+                egress.Result?.Entities.Count ?? 0,
+                egress.Result?.LeakCheck.Passed);
+        }
+
+        var audit = JsonSerializer.Serialize(BuildAudit(outboxId, score, egress, item.SrtStamp, anexo.AnexoStamp), JsonOptions);
 
         // BR-02: persist on SRT only. BR-03/04/09: repository must not write selection/condp.
         await _srtScores.SaveScoreAsync(
@@ -260,6 +281,56 @@ public sealed class AnalyzeCandidateJob
     
     }
 
+
+    private string ScoreFailureMessage(Exception ex)
+    {
+        if (!_engines.CloudEnabled)
+            return ex.Message;
+
+        if (ex.Message.StartsWith("AH-02", StringComparison.Ordinal)
+            || ex.Message.StartsWith("BR-08", StringComparison.Ordinal))
+            return ex.Message;
+
+        return "BR-08: chamada Qwen falhou.";
+    }
+
+    private object BuildAudit(
+        long outboxId,
+        AnalysisScoreResult score,
+        CloudEgressPreparation egress,
+        string sessionId,
+        string documentId)
+    {
+        var entities = egress.Result?.Entities;
+        var entityTypes = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (entities is not null)
+        {
+            foreach (var entity in entities)
+            {
+                var type = string.IsNullOrWhiteSpace(entity.EntityType) ? "UNKNOWN" : entity.EntityType;
+                entityTypes[type] = entityTypes.TryGetValue(type, out var n) ? n + 1 : 1;
+            }
+        }
+
+        return new
+        {
+            outbox_id = outboxId,
+            analyzed_utc = score.StampUtc,
+            host = _options.Value.QueueHostName,
+            ah = "AH-01..AH-08 enforced",
+            used_llm = score.UsedLlm,
+            engine = score.EngineName,
+            prompt_ver = score.PromptVer,
+            model = score.EngineName,
+            egress_allowed = egress.EgressAllowed,
+            entity_count = entities?.Count ?? 0,
+            entity_types = entityTypes,
+            leak_check_passed = egress.Result?.LeakCheck.Passed,
+            failure_reason = egress.FailureReason,
+            session_id = egress.Result?.SessionId ?? sessionId,
+            document_id = egress.Result?.DocumentId ?? documentId
+        };
+    }
 
     private async Task FailAsync(Domain.Entities.RecruitmentOutboxItem item, string message, CancellationToken ct)
     {

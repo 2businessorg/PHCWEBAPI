@@ -5,7 +5,7 @@ See full module notes: [../modulos/Recrutamento-IA.md](../modulos/Recrutamento-I
 ## Quick map
 
 - Spec law: AH-REC-IA-v1 (AH-01…08) + BR-REC-IA-v1
-- Engine: deterministic `rubric-evidence-v1` / `deterministic-v1` (embeddings REJECTED as sole engine)
+- Engine: Qwen cloud when `RecruitmentIa:EnableCloudLlm=true` (`qwen-cloud-v1`, `ILocalChatModel`). Offline rubric `rubric-evidence-v1` only when the flag is false. Embeddings REJECTED as sole engine.
 - OCR: shared `IDocumentTextExtractor` (do not fork)
 - Persist score: **SRT** `u_scoreia` + `u_justia`
 - Queue: Hangfire on **PHCAPI.Host** job `Recruitment.AnalyzeCandidate`

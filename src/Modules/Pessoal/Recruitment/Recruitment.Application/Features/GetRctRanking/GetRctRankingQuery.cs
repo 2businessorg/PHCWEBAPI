@@ -38,8 +38,11 @@ public sealed class GetRctRankingQueryHandler : IRequestHandler<GetRctRankingQue
         foreach (var row in ordered)
         {
             var breakdown = ParseBreakdown(row.JustificationJson);
-            // AH-02 read-path: re-AssertQuoteIsSubset against current anexos.u_texto (do not trust stored JSON alone).
-            await AssertQuotesAgainstCurrentUTextoAsync(row.CveStamp, breakdown, cancellationToken);
+            // Rubric quotes are re-checked against anexos.u_texto.
+            // Qwen quotes were checked against the pseudonymized text at score time
+            // and are not expected to appear in the raw OCR body.
+            if (!JustificationUsesLlm(row.JustificationJson))
+                await AssertQuotesAgainstCurrentUTextoAsync(row.CveStamp, breakdown, cancellationToken);
             candidates.Add(new RankedCandidateDto
             {
                 Position = position++,
@@ -83,6 +86,22 @@ public sealed class GetRctRankingQueryHandler : IRequestHandler<GetRctRankingQue
         var uTexto = anexo?.Texto ?? string.Empty;
         foreach (var row in quotes)
             RubricEvidenceScorer.AssertQuoteIsSubset(uTexto, row.Quote);
+    }
+
+    internal static bool JustificationUsesLlm(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return false;
+
+        try
+        {
+            var payload = JsonSerializer.Deserialize<JustificationPayloadDto>(json, JsonOptions);
+            return payload?.UsedLlm == true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     internal static IReadOnlyList<CriterionBreakdownDto> ParseBreakdown(string? json)

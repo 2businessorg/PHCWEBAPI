@@ -23,7 +23,7 @@ Modulo `src/Modules/Pessoal/Recruitment` — score por rubrica + evidencia citad
 - **BR-04**: `srt.condp` read-only for IA
 - **BR-09**: ranking and analyze/reprocess never write `selection` or `condp` — human decision only (pre-seleccao = ordered list for RH)
 - **BR-05**: `IPhcAvisoService` / `PhcAvisoServiceStub` — hook `XcUtil.criaAvs` (no parallel channel)
-- **BR-07/08**: OCR fail path; `EnableCloudLlm` defaults **false**
+- **BR-07/08**: OCR fail path. `RecruitmentIa:EnableCloudLlm=true` (product host) scores with Qwen on Presidio pseudonymized text only. Egress refusal or a Qwen error fails closed (`cve.u_estadoia=erro`) and does not fall back to the rubric. `EnableCloudLlm=false` keeps the offline rubric.
 - **BR-10**: hire→employee **out of scope**
 - **BR-12**: queue host = **this Hangfire host** (`PHCAPI.Host`, schema `PHCHANGFIRE`)
 
@@ -115,7 +115,13 @@ Title/footer: score is **input**; human decides in PHC. Forbidden: «seleccionad
 
 ## Config
 
-`appsettings.json` → `RecruitmentIa` (`EnableCloudLlm: false` by default).
+`appsettings.json` → `RecruitmentIa:EnableCloudLlm` is **true** (Qwen). `LocalAI:ApiKey` stays empty in git; ops inject the key. Missing key or a refused Presidio egress fails the job closed.
+
+### Qwen + Presidio
+
+When cloud is on, `AnalyzeCandidateJob` calls `IRecruitmentCloudEgressGuard` then `QwenCloudScoreEngine` through `IRecruitmentLlmClient` → existing `ILocalChatModel` (DashScope compatible-mode). The prompt is `qwen-cloud-v1`: JSON `{"criteria":[{"code","note","quote","justificationPt","conflito"}]}`. Quotes must be exact spans of the **pseudonymized** text. `u_modeloia` stores the model name (`LocalAI:Model`, e.g. `qwen3-coder-next`) and `u_prmveria` stores `qwen-cloud-v1`. `used_llm` in `u_justia` is true.
+
+`u_auditia` records anonymization evidence only: `egress_allowed`, `entity_count`, `entity_types` (PERSON, EMAIL_ADDRESS, …), `leak_check_passed`, `failure_reason`, `session_id`, `document_id`, `model`, `used_llm`, `prompt_ver`. It does not store the CV, the pseudonymized body, or original PII values. Logs use the same counters (`Qwen score outbox=… entityCount=…`). Alfredo checks `srt.u_auditia` / `u_modeloia` and host logs; he does not need the CV text.
 
 ## Tests
 

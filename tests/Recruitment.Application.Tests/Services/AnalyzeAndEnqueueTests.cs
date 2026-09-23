@@ -265,11 +265,25 @@ public class AnalyzeCandidateJobTests
             srt.Object,
             cve.Object,
             extractor.Object,
-            scorer,
+            new OfflineSelector(scorer),
             avisos.Object,
             Microsoft.Extensions.Options.Options.Create(new RecruitmentIaOptions { EnableCloudLlm = false }),
             new FlagOffCloudEgressGuard(),
             NullLogger<AnalyzeCandidateJob>.Instance);
+    }
+
+    private sealed class OfflineSelector : ICandidateScoreEngineSelector
+    {
+        private readonly ICandidateScoreEngine _engine;
+
+        public OfflineSelector(IRubricEvidenceScorer scorer)
+        {
+            _engine = new RubricCandidateScoreEngine(scorer);
+        }
+
+        public bool CloudEnabled => false;
+
+        public ICandidateScoreEngine Resolve() => _engine;
     }
     private sealed class FlagOffCloudEgressGuard : IRecruitmentCloudEgressGuard
     {

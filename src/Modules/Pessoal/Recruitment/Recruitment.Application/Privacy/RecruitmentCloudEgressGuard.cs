@@ -15,7 +15,7 @@ public interface IRecruitmentCloudEgressGuard
     /// <summary>
     /// Prepares pseudonymized text for a future cloud LLM call.
     /// Returns EgressAllowed=false when flag is off, sidecar down, or leak check fails.
-    /// v1: no cloud LLM client is invoked here (GO Denilson still required operationally).
+    /// The analyze job calls Qwen only when EgressAllowed is true.
     /// </summary>
     Task<CloudEgressPreparation> PrepareAsync(
         string sessionId,

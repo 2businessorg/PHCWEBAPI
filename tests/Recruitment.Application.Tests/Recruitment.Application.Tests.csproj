@@ -22,5 +22,6 @@
     <ProjectReference Include="../../src/Modules/Pessoal/Recruitment/Recruitment.Application/Recruitment.Application.csproj" />
     <ProjectReference Include="../../src/Modules/Pessoal/Recruitment/Recruitment.Domain/Recruitment.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Pessoal/Recruitment/Recruitment.Infrastructure/Recruitment.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Ai/Agent.Application/Agent.Application.csproj" />
   </ItemGroup>
 </Project>

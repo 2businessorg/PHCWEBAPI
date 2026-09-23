@@ -23,7 +23,7 @@ ASCII grammar `{{ENTITY_TYPE_hex}}` (Windows-1252 safe). Example: `{{EMAIL_ADDRE
 
 | Flag | Default | Meaning |
 |------|---------|---------|
-| `RecruitmentIa:EnableCloudLlm` | **false** | Product gate for cloud path + GO Denilson (BR-08) |
+| `RecruitmentIa:EnableCloudLlm` | property **false**; product `appsettings.json` **true** | Product gate for Qwen. Missing config stays on the offline rubric. |
 | `Pseudonymization:RequireSidecarForCloudEgress` | true | CloudEgress fail-closed if sidecar down |
 | `Pseudonymization:EnableHybridNerV2` | false | v2 stub (GLiNER/spaCy) |
 | `Pseudonymization:EnableQuasiIdGeneralization` | false | v3 stub |
@@ -41,7 +41,7 @@ Config placeholders: `appsettings.json` section `Pseudonymization` and `appsetti
 
 ## Pipeline (v1)
 
-Normalize → Detect (Presidio + regex/dict/context) → Classify → Resolve → Tokenize + encrypted TokenMap → independent LeakCheck (fail-closed for CloudEgress) → (future) Cloud LLM → Safe detoken (parser + session whitelist + type check).
+Normalize → Detect (Presidio + regex/dict/context) → Classify → Resolve → Tokenize + encrypted TokenMap → independent LeakCheck (fail-closed for CloudEgress) → Qwen via `ILocalChatModel` on the pseudonymized text only (`QwenCloudScoreEngine`) → Safe detoken (parser + session whitelist + type check).
 
 ## Sidecar
 
@@ -55,7 +55,7 @@ See `sidecar/presidio-2b/README.md`. Endpoints: `/health`, `/analyze`, `/anonymi
 - [x] Leak checker independent fail-closed (CloudEgress)
 - [x] Detoken parser + session scope + reject unknown (StrictDetoken)
 - [x] Allowlist professional skills (do not tokenize)
-- [x] `EnableCloudLlm` default false; path tied to BR-08 (Recruitment thin adapter)
+- [x] `EnableCloudLlm` property default false (offline if unset); product host sets true and fails closed without Presidio/Qwen (BR-08)
 - [ ] Metrics precision/recall/leakage in lab (deferred — lab harness out of scope for this slice)
 - [x] Documentation: pseudonymization, no 100% guarantee
 - [x] No real secrets in repo (Development appsettings ConnectionStrings untouched)

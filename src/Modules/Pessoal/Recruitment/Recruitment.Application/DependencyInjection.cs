@@ -20,6 +20,9 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.AddSingleton<IRubricEvidenceScorer, RubricEvidenceScorer>();
+        services.AddSingleton<RubricCandidateScoreEngine>();
+        services.AddScoped<QwenCloudScoreEngine>();
+        services.AddScoped<ICandidateScoreEngineSelector, CandidateScoreEngineSelector>();
         services.AddScoped<IRecruitmentEnqueueService, RecruitmentEnqueueService>();
         services.AddScoped<IRecruitmentCloudEgressGuard, RecruitmentCloudEgressGuard>();
         services.AddScoped<AnalyzeCandidateJob>();
