@@ -227,41 +227,15 @@ public sealed class AnalyzeCandidateJob
             ForbiddenCopyGuard.ThrowIfForbidden(row.JustificationPt, row.Code);
         }
 
-        var assisted = AssistedRecommendationBuilder.Build(score.Breakdown);
-        var payload = new JustificationPayloadDto
+        if (score.UsedLlm && !CloudNarrativeComplete(score))
         {
-            Engine = score.EngineName,
-            PromptVer = score.PromptVer,
-            StampUtc = score.StampUtc,
-            UsedLlm = score.UsedLlm,
-            Total = score.TotalScore,
-            ScoreIsInputNotDecision = true,
-            HumanDecisionRequired = true,
-            DisclaimerPt = AssistedDecisions.DisclaimerPt,
-            CandidateAlias = CandidateAlias(item.SrtStamp),
-            Recommendation = new AssistedRecommendationDto
-            {
-                Decision = assisted.Decision,
-                LabelPt = assisted.LabelPt,
-                DecisionNote = assisted.DecisionNote
-            },
-            Criteria = assisted.Criteria,
-            GapsPt = assisted.GapsPt,
-            Conflicts = assisted.Conflicts,
-            Breakdown = score.Breakdown.Select(b => new CriterionBreakdownDto
-            {
-                Code = b.Code,
-                Label = b.Label,
-                Weight = b.Weight,
-                Note = b.Note,
-                Quote = b.Quote,
-                QuoteOffset = b.QuoteOffset,
-                SemEvidencia = b.SemEvidencia,
-                Conflito = b.Conflito,
-                ConflictQuotes = b.ConflictQuotes,
-                JustificationPt = b.JustificationPt
-            }).ToArray()
-        };
+            await ClearScoreReliableAsync(item.SrtStamp, ct);
+            await FailAsync(item, "BR-08: resposta Qwen sem campos do scorecard.", ct);
+            await NotifyAsync(item, IaEstados.Erro, recipients, ct);
+            return;
+        }
+
+        var payload = ScorecardComposer.Compose(score, item.SrtStamp, ocr, egress);
 
         var json = JsonSerializer.Serialize(payload, JsonOptions);
         ForbiddenCopyGuard.ThrowIfForbidden(json, "justificationJson");
@@ -277,7 +251,7 @@ public sealed class AnalyzeCandidateJob
                 egress.Result?.LeakCheck.Passed);
         }
 
-        var audit = JsonSerializer.Serialize(BuildAudit(outboxId, score, egress, item.SrtStamp, anexo.AnexoStamp), JsonOptions);
+        var audit = JsonSerializer.Serialize(BuildAudit(outboxId, score, egress, ocr, item.SrtStamp, anexo.AnexoStamp), JsonOptions);
 
         // BR-02: persist on SRT only. BR-03/04/09: repository must not write selection/condp.
         await _srtScores.SaveScoreAsync(
@@ -298,11 +272,10 @@ public sealed class AnalyzeCandidateJob
     }
 
 
-    private static string CandidateAlias(string srtStamp)
-    {
-        var stamp = (srtStamp ?? string.Empty).Trim();
-        return stamp.Length == 0 ? "cand-unknown" : "cand-" + stamp;
-    }
+    private static bool CloudNarrativeComplete(AnalysisScoreResult score) =>
+        score.StrengthsPt.Count is >= 1 and <= 5
+        && !string.IsNullOrWhiteSpace(score.InterviewValidationQuestionPt)
+        && !string.IsNullOrWhiteSpace(score.RationalePt);
 
     private string ScoreFailureMessage(Exception ex)
     {
@@ -320,6 +293,7 @@ public sealed class AnalyzeCandidateJob
         long outboxId,
         AnalysisScoreResult score,
         CloudEgressPreparation egress,
+        DocumentTextExtractionResult ocr,
         string sessionId,
         string documentId)
     {
@@ -352,7 +326,21 @@ public sealed class AnalyzeCandidateJob
             leak_check_passed = egress.Result?.LeakCheck.Passed,
             failure_reason = egress.FailureReason,
             session_id = egress.Result?.SessionId ?? sessionId,
-            document_id = egress.Result?.DocumentId ?? documentId
+            document_id = egress.Result?.DocumentId ?? documentId,
+            auditTrail = new
+            {
+                modelName = score.EngineName,
+                promptVer = score.PromptVer,
+                ocrEngine = string.IsNullOrWhiteSpace(ocr.EngineName) ? ocr.Source.ToString() : ocr.Source + "/" + ocr.EngineName,
+                analyzedUtc = score.StampUtc,
+                usedLlm = score.UsedLlm,
+                egressAllowed = egress.EgressAllowed,
+                entityCount = entities?.Count ?? 0,
+                entityTypeCounts = entityTypes,
+                leakCheckPassed = egress.Result?.LeakCheck.Passed,
+                sessionId = egress.Result?.SessionId ?? sessionId,
+                documentId = egress.Result?.DocumentId ?? documentId
+            }
         };
     }
 

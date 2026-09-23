@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Agent.Application.Abstractions;
 using Agent.Application.Chat;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Recruitment.Application.DTOs;
 using Recruitment.Application.Jobs;
 using Recruitment.Application.Options;
 using Recruitment.Application.Privacy;
@@ -52,9 +54,8 @@ public class QwenCloudScoreTests
     {
         var llm = new StubLlm("qwen3-coder-next")
         {
-            Response = $$"""
-                {"criteria":[{"code":"CRT-STACK","note":20,"quote":"{{Quote}}","justificationPt":"Evidencia de stack no texto.","conflito":false}]}
-                """
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":20,"weight":99,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto.","conflito":false}""")
         };
         var engine = new QwenCloudScoreEngine(llm);
         var criteria = new List<RctCriterion>
@@ -69,6 +70,10 @@ public class QwenCloudScoreTests
         score.PromptVer.Should().Be(QwenCloudScoreEngine.PromptVer);
         score.AssistedDecision.Should().Be(AssistedDecisions.Avancar);
         score.Breakdown.Single().Quote.Should().Be(Quote);
+        score.Breakdown.Single().Weight.Should().Be(25);
+        score.RationalePt.Should().Be("Ajuste assistido com base nas citacoes.");
+        score.StrengthsPt.Should().ContainSingle().Which.Should().Be("SQL e PHC citados no texto.");
+        score.InterviewValidationQuestionPt.Should().Be("Que modulos PHC usou no ultimo projecto?");
         llm.LastUser.Should().Contain(Pseudo);
         llm.LastUser.Should().NotContain(RawSecret);
     }
@@ -90,6 +95,9 @@ public class QwenCloudScoreTests
     [InlineData("auto_advance", null)]
     [InlineData("pass", null)]
     [InlineData("fail", null)]
+    [InlineData("entrevista", null)]
+    [InlineData("mais_info", null)]
+    [InlineData("nao_recomendar_assistido", null)]
     public void Parser_KeepsOnlyThreeDecisionValues(string raw, string? expected)
     {
         var json = $$"""{"recommendation":{"decision":"{{raw}}"},"criteria":[]}""";
@@ -101,9 +109,9 @@ public class QwenCloudScoreTests
     {
         var llm = new StubLlm("qwen3-coder-next")
         {
-            Response = $$"""
-                {"recommendation":{"decision":"hire"},"criteria":[{"code":"CRT-STACK","note":20,"quote":"{{Quote}}","justificationPt":"Evidencia de stack no texto.","conflito":false}]}
-                """
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":20,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto.","conflito":false}""",
+                "hire")
         };
         var engine = new QwenCloudScoreEngine(llm);
         var score = await engine.ScoreAsync(
@@ -159,6 +167,69 @@ public class QwenCloudScoreTests
             ConflictQuotes = conflito && quote is not null ? new[] { quote } : Array.Empty<string>(),
             JustificationPt = note <= 0 ? HitlCopy.SemEvidencia : "Evidencia citada."
         };
+
+    [Fact]
+    public async Task QwenEngine_MissingStrengths_FailsClosed()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = """{"criteria":[{"code":"CRT-STACK","note":20,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}],"recommendation":{"decision":"avancar","rationalePt":"Texto curto."},"interviewValidationQuestionPt":"Qual o modulo?"}"""
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+        var act = async () => await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*strengthsPt*");
+    }
+
+    [Fact]
+    public async Task QwenJson_Roundtrip_KeepsScorecardAndAssistedDecision()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":20,"weight":99,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto.","conflito":false}""")
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        var payload = ScorecardComposer.Compose(
+            score,
+            "SRT2",
+            DocumentTextExtractionResult.FromNative(Pseudo, "test"),
+            new CloudEgressPreparation(true, true, Pseudo, null, new PseudonymizationResult(
+                Pseudo,
+                "SRT2",
+                "ANX2",
+                [new DetectedEntitySummary("PERSON", "{{PERSON_ab12}}", 0.9f, "presidio", 0, 8)],
+                LeakCheckResult.Ok(),
+                true,
+                null)));
+
+        var json = JsonSerializer.Serialize(payload);
+        var back = JsonSerializer.Deserialize<JustificationPayloadDto>(json);
+
+        back.Should().NotBeNull();
+        back!.UsedLlm.Should().BeTrue();
+        back.TotalScore.Should().Be(20);
+        back.Recommendation!.Decision.Should().Be(AssistedDecisions.Avancar);
+        back.Recommendation.RationalePt.Should().Be("Ajuste assistido com base nas citacoes.");
+        back.StrengthsPt.Should().ContainSingle();
+        back.InterviewValidationQuestionPt.Should().NotBeNullOrWhiteSpace();
+        back.Labels.HumanDecisionRequired.Should().BeTrue();
+        back.Labels.PiiExcludedFromScore.Should().BeTrue();
+        back.Criteria.Single().MaxWeight.Should().Be(25);
+        back.Criteria.Single().WeightSource.Should().Be("rct");
+        back.Readiness!.PiiTypesExcluded.Should().Contain("PERSON");
+        back.CandidateAlias.Should().Be(ScorecardComposer.CandidateAlias("SRT2"));
+        back.CandidateAlias.Should().NotContain("maria");
+        json.Should().NotContain(RawSecret);
+    }
 
     [Fact]
     public async Task QwenEngine_QuoteOutsidePseudonymizedText_ThrowsAh02()
@@ -276,9 +347,8 @@ public class QwenCloudScoreTests
         string? userPrompt = null;
         cloud.Setup(x => x.CompleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Callback<string, string, CancellationToken>((_, user, _) => userPrompt = user)
-            .ReturnsAsync($$"""
-                {"criteria":[{"code":"CRT-STACK","note":18,"quote":"{{Quote}}","justificationPt":"Stack citada no texto pseudonimizado."}]}
-                """);
+            .ReturnsAsync(CloudJson(
+                """{"code":"CRT-STACK","note":18,"weight":99,"quote":"SQL e PHC","justificationPt":"Stack citada no texto pseudonimizado."}"""));
 
         string? audit = null;
         string? engine = null;
@@ -305,7 +375,10 @@ public class QwenCloudScoreTests
         audit.Should().Contain("PERSON");
         audit.Should().Contain("EMAIL_ADDRESS");
         audit.Should().Contain("\"leak_check_passed\":true");
-        audit.Should().Contain("qwen-cloud-v2");
+        audit.Should().Contain("qwen-cloud-v3");
+        audit.Should().Contain("\"modelName\":\"qwen3-coder-next\"");
+        audit.Should().Contain("\"usedLlm\":true");
+        audit.Should().Contain("\"entityTypeCounts\"");
         audit.Should().Contain("job_stamp_utc");
         audit.Should().Contain("ocr_stamp_utc");
         audit.Should().NotContain(RawSecret);
@@ -320,9 +393,18 @@ public class QwenCloudScoreTests
         justification.Should().Contain("\"scoreIsInputNotDecision\":true");
         justification.Should().Contain("\"status\":\"evidenced\"");
         justification.Should().Contain("\"weightSource\":\"rct\"");
-        justification.Should().Contain("\"candidateAlias\":\"cand-SRT2\"");
+        justification.Should().Contain("perfil pseudonimizado");
+        justification.Should().Contain("\"totalScore\":18");
+        justification.Should().Contain("\"maxWeight\":25");
+        justification.Should().Contain("\"criteriaWithEvidence\":\"1/1\"");
+        justification.Should().Contain("\"piiExcludedFromScore\":true");
+        justification.Should().Contain("SQL e PHC citados no texto.");
+        justification.Should().Contain("Que modulos PHC usou no ultimo projecto?");
+        justification.Should().Contain("Ajuste assistido com base nas citacoes.");
         justification.Should().NotContain("shortlist_suggest");
         justification.Should().NotContain("hire");
+        justification.Should().NotContain("entrevista");
+        justification.Should().NotContain("\"weight\":99");
         justification.Should().NotContain(RawSecret);
         rubric.Verify(x => x.Score(It.IsAny<string?>(), It.IsAny<IReadOnlyList<RctCriterion>>()), Times.Never);
     }
@@ -501,6 +583,11 @@ public class QwenCloudScoreTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(_prep);
     }
+
+    private static string CloudJson(string criterionObject, string decision = "avancar") =>
+        $$"""
+        {"criteria":[{{criterionObject}}],"recommendation":{"decision":"{{decision}}","rationalePt":"Ajuste assistido com base nas citacoes."},"strengthsPt":["SQL e PHC citados no texto."],"interviewValidationQuestionPt":"Que modulos PHC usou no ultimo projecto?"}
+        """;
 
     private sealed class StubLlm : IRecruitmentLlmClient
     {

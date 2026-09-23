@@ -180,6 +180,9 @@ public sealed class JustificationPayloadDto
     [JsonPropertyName("total")]
     public decimal Total { get; init; }
 
+    [JsonPropertyName("totalScore")]
+    public decimal TotalScore { get; init; }
+
     [JsonPropertyName("scoreIsInputNotDecision")]
     public bool ScoreIsInputNotDecision { get; init; } = true;
 
@@ -193,8 +196,20 @@ public sealed class JustificationPayloadDto
     [JsonPropertyName("candidateAlias")]
     public string CandidateAlias { get; init; } = string.Empty;
 
+    [JsonPropertyName("labels")]
+    public ScorecardLabelsDto Labels { get; init; } = new();
+
     [JsonPropertyName("recommendation")]
     public AssistedRecommendationDto? Recommendation { get; init; }
+
+    [JsonPropertyName("readiness")]
+    public ScorecardReadinessDto? Readiness { get; init; }
+
+    [JsonPropertyName("strengthsPt")]
+    public IReadOnlyList<string> StrengthsPt { get; init; } = Array.Empty<string>();
+
+    [JsonPropertyName("interviewValidationQuestionPt")]
+    public string? InterviewValidationQuestionPt { get; init; }
 
     [JsonPropertyName("criteria")]
     public IReadOnlyList<CriterionAssessmentDto> Criteria { get; init; } = Array.Empty<CriterionAssessmentDto>();
@@ -218,8 +233,51 @@ public sealed class AssistedRecommendationDto
     [JsonPropertyName("labelPt")]
     public required string LabelPt { get; init; }
 
+    [JsonPropertyName("rationalePt")]
+    public string? RationalePt { get; init; }
+
     [JsonPropertyName("decision_note")]
     public required string DecisionNote { get; init; }
+}
+
+public sealed class ScorecardLabelsDto
+{
+    [JsonPropertyName("humanDecisionRequired")]
+    public bool HumanDecisionRequired { get; init; } = true;
+
+    [JsonPropertyName("criteriaWithEvidence")]
+    public string CriteriaWithEvidence { get; init; } = "0/0";
+
+    [JsonPropertyName("piiExcludedFromScore")]
+    public bool PiiExcludedFromScore { get; init; }
+}
+
+public sealed class ScorecardReadinessDto
+{
+    [JsonPropertyName("ocrQualityPct")]
+    public decimal? OcrQualityPct { get; init; }
+
+    [JsonPropertyName("ocrEngine")]
+    public string OcrEngine { get; init; } = string.Empty;
+
+    [JsonPropertyName("criteriaCovered")]
+    public string CriteriaCovered { get; init; } = "0/0";
+
+    [JsonPropertyName("dataAlert")]
+    public ScorecardDataAlertDto DataAlert { get; init; } = new();
+
+    [JsonPropertyName("piiTypesExcluded")]
+    public IReadOnlyList<string> PiiTypesExcluded { get; init; } = Array.Empty<string>();
+}
+
+public sealed class ScorecardDataAlertDto
+{
+    /// <summary>ok | warn | critical</summary>
+    [JsonPropertyName("level")]
+    public string Level { get; init; } = "ok";
+
+    [JsonPropertyName("messagePt")]
+    public string MessagePt { get; init; } = string.Empty;
 }
 
 public sealed class CriterionAssessmentDto
@@ -227,12 +285,42 @@ public sealed class CriterionAssessmentDto
     [JsonPropertyName("code")]
     public required string Code { get; init; }
 
+    [JsonPropertyName("label")]
+    public string Label { get; init; } = string.Empty;
+
     /// <summary>evidenced | no_evidence | conflict</summary>
     [JsonPropertyName("status")]
     public required string Status { get; init; }
 
     [JsonPropertyName("weightSource")]
     public string WeightSource { get; init; } = "rct";
+
+    [JsonPropertyName("weightPct")]
+    public decimal WeightPct { get; init; }
+
+    [JsonPropertyName("required")]
+    public bool? Required { get; init; }
+
+    [JsonPropertyName("note")]
+    public decimal Note { get; init; }
+
+    [JsonPropertyName("maxWeight")]
+    public decimal MaxWeight { get; init; }
+
+    [JsonPropertyName("barPct")]
+    public decimal BarPct { get; init; }
+
+    [JsonPropertyName("quote")]
+    public string? Quote { get; init; }
+
+    [JsonPropertyName("justificationPt")]
+    public string JustificationPt { get; init; } = string.Empty;
+
+    [JsonPropertyName("semEvidencia")]
+    public bool SemEvidencia { get; init; }
+
+    [JsonPropertyName("conflito")]
+    public bool Conflito { get; init; }
 
     [JsonPropertyName("gapsPt")]
     public IReadOnlyList<string> GapsPt { get; init; } = Array.Empty<string>();

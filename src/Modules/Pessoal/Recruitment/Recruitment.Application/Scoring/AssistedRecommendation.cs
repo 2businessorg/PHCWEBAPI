@@ -116,7 +116,7 @@ public static class AssistedRecommendationBuilder
         };
     }
 
-    private static string StatusOf(CriterionScoreBreakdown row)
+    public static string StatusOf(CriterionScoreBreakdown row)
     {
         if (row.Conflito)
             return AssistedDecisions.StatusConflict;

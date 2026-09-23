@@ -19,4 +19,11 @@ public sealed class AnalysisScoreResult
 
     /// <summary>Assisted suggestion only: avancar | em_duvida | nao_avancar. Null on the offline rubric.</summary>
     public string? AssistedDecision { get; init; }
+
+    /// <summary>Model rationale for the assisted suggestion. Empty on the offline rubric.</summary>
+    public string? RationalePt { get; init; }
+
+    public IReadOnlyList<string> StrengthsPt { get; init; } = Array.Empty<string>();
+
+    public string? InterviewValidationQuestionPt { get; init; }
 }

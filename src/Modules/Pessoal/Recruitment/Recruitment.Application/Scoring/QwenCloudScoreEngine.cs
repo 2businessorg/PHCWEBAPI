@@ -12,7 +12,7 @@ namespace Recruitment.Application.Scoring;
 /// </summary>
 public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 {
-    public const string PromptVer = "qwen-cloud-v2";
+    public const string PromptVer = "qwen-cloud-v3";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -39,7 +39,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             throw new InvalidOperationException("BR-08: modelo Qwen nao configurado.");
 
         var content = await _llm.CompleteAsync(SystemPrompt, BuildUserPrompt(evidenceText, criteria), cancellationToken);
-        var parsed = Parse(content);
+        var document = Parse(content);
+        var parsed = document.Criteria ?? new List<CloudCriterionRow>();
         var byCode = new Dictionary<string, CloudCriterionRow>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in parsed)
         {
@@ -59,6 +60,9 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         if (total > 100) total = 100;
 
         var assisted = AssistedRecommendationBuilder.Build(breakdown);
+        var strengths = RequireStrengths(document.StrengthsPt);
+        var question = RequireNarrative(document.InterviewValidationQuestionPt, "interviewValidationQuestionPt", 300);
+        var rationale = RequireNarrative(document.Recommendation?.RationalePt, "rationalePt", 500);
 
         return new AnalysisScoreResult
         {
@@ -68,7 +72,10 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             PromptVer = PromptVer,
             StampUtc = DateTime.UtcNow,
             UsedLlm = true,
-            AssistedDecision = assisted.Decision
+            AssistedDecision = assisted.Decision,
+            RationalePt = rationale,
+            StrengthsPt = strengths,
+            InterviewValidationQuestionPt = question
         };
     }
 
@@ -81,8 +88,12 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         "Justificacao em pt-PT. Nao inventes factos fora do texto. " +
         "O score e input ao RH. A sugestao assistida usa so decision avancar, em_duvida ou nao_avancar. " +
         "Sem evidencia ou conflito no criterio: a sugestao e em_duvida. " +
+        "Pesos sao os da lista. Nao inventes pesos nem criterios. " +
+        "Nao escrevas nomes, emails ou telefones. " +
+        "strengthsPt: 1 a 5 frases curtas. interviewValidationQuestionPt: uma pergunta. rationalePt: justificacao curta da sugestao. " +
         "Formato: {\"criteria\":[{\"code\":\"\",\"note\":0,\"quote\":\"\",\"justificationPt\":\"\",\"conflito\":false}]," +
-        "\"recommendation\":{\"decision\":\"em_duvida\"}}";
+        "\"recommendation\":{\"decision\":\"em_duvida\",\"rationalePt\":\"\"}," +
+        "\"strengthsPt\":[\"\"],\"interviewValidationQuestionPt\":\"\"}";
 
     internal static string BuildUserPrompt(string evidenceText, IReadOnlyList<RctCriterion> criteria)
     {
@@ -104,21 +115,64 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         return sb.ToString();
     }
 
-    private static IReadOnlyList<CloudCriterionRow> Parse(string? content)
+    private static CloudScoreDocument Parse(string? content)
     {
         var json = ExtractJson(content);
-        CloudScoreDocument? doc;
         try
         {
-            doc = JsonSerializer.Deserialize<CloudScoreDocument>(json, JsonOptions);
+            return JsonSerializer.Deserialize<CloudScoreDocument>(json, JsonOptions)
+                ?? throw new InvalidOperationException("BR-08: resposta Qwen nao e JSON de score.");
         }
         catch (JsonException)
         {
             throw new InvalidOperationException("BR-08: resposta Qwen nao e JSON de score.");
         }
-
-        return doc?.Criteria ?? new List<CloudCriterionRow>();
     }
+
+    private static IReadOnlyList<string> RequireStrengths(IReadOnlyList<string>? raw)
+    {
+        var items = (raw ?? Array.Empty<string>())
+            .Select(s => s?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Cast<string>()
+            .ToList();
+        if (items.Count is < 1 or > 5)
+            throw new InvalidOperationException("BR-08: resposta Qwen sem strengthsPt (1 a 5).");
+
+        foreach (var item in items)
+        {
+            if (item.Length > 180)
+                throw new InvalidOperationException("BR-08: strengthsPt demasiado longo.");
+            RejectContact(item, "strengthsPt");
+            ForbiddenCopyGuard.ThrowIfForbidden(item, "strengthsPt");
+        }
+
+        return items;
+    }
+
+    private static string RequireNarrative(string? value, string field, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperationException($"BR-08: resposta Qwen sem {field}.");
+
+        var text = value.Trim();
+        if (text.Length > maxLength)
+            throw new InvalidOperationException($"BR-08: {field} demasiado longo.");
+
+        RejectContact(text, field);
+        ForbiddenCopyGuard.ThrowIfForbidden(text, field);
+        return text;
+    }
+
+    private static void RejectContact(string text, string field)
+    {
+        if (text.Contains('@', StringComparison.Ordinal) || PhoneRun.IsMatch(text))
+            throw new InvalidOperationException($"BR-08: {field} contem contacto. Nao persistido.");
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex PhoneRun = new(
+        @"\d{8,}",
+        System.Text.RegularExpressions.RegexOptions.Compiled);
 
     /// <summary>
     /// Model decision is kept only when it is avancar, em_duvida, or nao_avancar.
@@ -223,6 +277,19 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
     private sealed class CloudScoreDocument
     {
         public List<CloudCriterionRow>? Criteria { get; set; }
+
+        public CloudRecommendation? Recommendation { get; set; }
+
+        public List<string>? StrengthsPt { get; set; }
+
+        public string? InterviewValidationQuestionPt { get; set; }
+    }
+
+    private sealed class CloudRecommendation
+    {
+        public string? Decision { get; set; }
+
+        public string? RationalePt { get; set; }
     }
 
     private sealed class CloudCriterionRow
