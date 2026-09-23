@@ -9,4 +9,6 @@ See full module notes: [../modulos/Recrutamento-IA.md](../modulos/Recrutamento-I
 - OCR: shared `IDocumentTextExtractor` (do not fork)
 - Persist score: **SRT** `u_scoreia` + `u_justia`
 - Queue: Hangfire on **PHCAPI.Host** job `Recruitment.AnalyzeCandidate`
+- Product API: `POST /api/recruitment/{idrct}/analyze` (resolves `rct.idrct`). Flat `POST /api/recruitment/enqueue` is legacy.
+- SCAMPOS short columns: `srt.u_prmveria`, `srt.u_auditia`
 - Weights: read from `u_rec_ia_crt` (must reflect RCT); lab CRT-* seed is demo-only

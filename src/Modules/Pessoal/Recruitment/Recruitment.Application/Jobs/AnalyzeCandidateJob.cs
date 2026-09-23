@@ -242,7 +242,7 @@ public sealed class AnalyzeCandidateJob
             ah = "AH-01..AH-08 enforced"
         }, JsonOptions);
 
-        // BR-02: persist on SRT only. BR-03/04: repository must not write selection/condp.
+        // BR-02: persist on SRT only. BR-03/04/09: repository must not write selection/condp.
         await _srtScores.SaveScoreAsync(
             item.SrtStamp,
             score.TotalScore,

@@ -1,5 +1,11 @@
 namespace Recruitment.Domain.Constants;
 
+/// <summary>PHC rct.idrct is a string id.</summary>
+public static class RctIds
+{
+    public const int MaxLength = 50;
+}
+
 /// <summary>
 /// Values for CVE.u_estadoia (BR-12 / swimlane Analisar).
 /// </summary>
@@ -33,6 +39,12 @@ public static class HitlCopy
         "Score IA = input. Decisao de avancar/rejeitar e so humana no PHC.";
 
     public const string SemEvidencia = "sem evidencia no CV";
+
+    /// <summary>
+    /// HITL ranking is the human pre-selection list. IA does not decide.
+    /// </summary>
+    public const string PreSelectionNote =
+        "Lista ordenada para pre-seleccao humana. Nao e decisao automatica da IA.";
 
     /// <summary>Forbidden substrings (case/accent-insensitive; pela IA | by AI) — AH-04 kill case.</summary>
     public static readonly string[] ForbiddenPhrases =

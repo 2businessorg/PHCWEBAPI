@@ -3,7 +3,9 @@
 -- Run against demo BD (e.g. OnTS_2BusinessIA). Review column names on customer DBs.
 -- Chosen U_* columns (hypotheses verified vs PHC U_ convention — adjust if collide):
 --   cve.u_estadoia, anexos.u_texto, srt.u_scoreia / u_justia / u_modeloia /
---   u_promptveria / u_stampia / u_auditoriaia
+--   u_prmveria / u_stampia / u_auditia
+-- SCAMPOS: the name after u_ is at most 8 characters.
+-- Retired long names (do not create): u_promptveria, u_auditoriaia.
 -- Outbox: u_rec_ia_outbox | Criteria bridge: u_rec_ia_crt
 -- =============================================================================
 
@@ -22,14 +24,20 @@ IF COL_LENGTH('srt', 'u_justia') IS NULL
 IF COL_LENGTH('srt', 'u_modeloia') IS NULL
     ALTER TABLE srt ADD u_modeloia VARCHAR(100) NULL;
 
-IF COL_LENGTH('srt', 'u_promptveria') IS NULL
-    ALTER TABLE srt ADD u_promptveria VARCHAR(50) NULL;
+IF COL_LENGTH('srt', 'u_prmveria') IS NULL AND COL_LENGTH('srt', 'u_promptveria') IS NOT NULL
+    EXEC sp_rename 'srt.u_promptveria', 'u_prmveria', 'COLUMN';
+
+IF COL_LENGTH('srt', 'u_prmveria') IS NULL
+    ALTER TABLE srt ADD u_prmveria VARCHAR(50) NULL;
 
 IF COL_LENGTH('srt', 'u_stampia') IS NULL
     ALTER TABLE srt ADD u_stampia DATETIME NULL;
 
-IF COL_LENGTH('srt', 'u_auditoriaia') IS NULL
-    ALTER TABLE srt ADD u_auditoriaia NVARCHAR(MAX) NULL;
+IF COL_LENGTH('srt', 'u_auditia') IS NULL AND COL_LENGTH('srt', 'u_auditoriaia') IS NOT NULL
+    EXEC sp_rename 'srt.u_auditoriaia', 'u_auditia', 'COLUMN';
+
+IF COL_LENGTH('srt', 'u_auditia') IS NULL
+    ALTER TABLE srt ADD u_auditia NVARCHAR(MAX) NULL;
 GO
 
 IF OBJECT_ID('u_rec_ia_outbox', 'U') IS NULL

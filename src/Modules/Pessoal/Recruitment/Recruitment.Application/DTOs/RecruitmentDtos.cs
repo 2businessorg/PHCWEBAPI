@@ -3,6 +3,59 @@ using Recruitment.Domain.Constants;
 
 namespace Recruitment.Application.DTOs;
 
+public sealed class AnalyzeVacancyResultDto
+{
+    public required string IdRct { get; init; }
+
+    public required string RctStamp { get; init; }
+
+    public string? RequestedBy { get; init; }
+
+    public int WithCv { get; init; }
+
+    public int Enqueued { get; init; }
+
+    public int Skipped { get; init; }
+
+    public string Message { get; init; } = string.Empty;
+
+    public IReadOnlyList<CandidateEnqueueItemDto> Candidates { get; init; } = Array.Empty<CandidateEnqueueItemDto>();
+}
+
+public sealed class CandidateEnqueueItemDto
+{
+    public required string SrtStamp { get; init; }
+
+    public required string CveStamp { get; init; }
+
+    public bool Enqueued { get; init; }
+
+    public long? OutboxId { get; init; }
+
+    public string Message { get; init; } = string.Empty;
+
+    public int CriteriaCount { get; init; }
+
+    public int IntervenienteCount { get; init; }
+}
+
+public sealed class VacancyIaStatusDto
+{
+    public required string IdRct { get; init; }
+
+    public required string RctStamp { get; init; }
+
+    public int Pendente { get; init; }
+
+    public int Ok { get; init; }
+
+    public int Erro { get; init; }
+
+    public int SemEstado { get; init; }
+
+    public int Total { get; init; }
+}
+
 public sealed class EnqueueAnalysisResultDto
 {
     public bool Enqueued { get; init; }
@@ -21,6 +74,11 @@ public sealed class RctRankingDto
     public string Title { get; init; } = HitlCopy.RankingTitle;
 
     public string Footer { get; init; } = HitlCopy.Footer;
+
+    public string PreSelectionNote { get; init; } = HitlCopy.PreSelectionNote;
+
+    /// <summary>Public vacancy id when the caller used /api/recruitment/{idrct}/ranking.</summary>
+    public string? IdRct { get; init; }
 
     public required string RctStamp { get; init; }
 
