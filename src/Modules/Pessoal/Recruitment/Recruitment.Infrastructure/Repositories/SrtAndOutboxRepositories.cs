@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
+using Recruitment.Domain.Constants;
 using Recruitment.Domain.Entities;
 using Recruitment.Domain.Repositories;
 using Recruitment.Infrastructure.Options;
@@ -33,6 +34,78 @@ public sealed class SrtScoreRepository : ISrtScoreRepository
         return await QueryAsync($"{_schema.SrtRctStampColumn} = @key", rctStamp, ct);
     }
 
+    public Task<IReadOnlyList<SrtCandidateRow>> ListWithCvByRctAsync(
+        string rctStamp,
+        CancellationToken ct = default)
+    {
+        var extra = $"""
+            AND EXISTS (
+                SELECT 1
+                FROM [{_schema.AnexosTable}] a
+                WHERE a.[{_schema.AnexosOriTableColumn}] = @ori
+                  AND a.[{_schema.AnexosRecStampColumn}] = s.[{_schema.SrtCveStampColumn}]
+                  AND a.[{_schema.AnexosTipoColumn}] = @tipo
+                  AND a.[{_schema.AnexosBytesColumn}] IS NOT NULL
+                  AND DATALENGTH(a.[{_schema.AnexosBytesColumn}]) > 0
+            )
+            """;
+
+        return QueryAsync(
+            $"{_schema.SrtRctStampColumn} = @key",
+            rctStamp,
+            ct,
+            extra,
+            cmd =>
+            {
+                cmd.Parameters.AddWithValue("@ori", _schema.AnexosOriTableCveValue);
+                cmd.Parameters.AddWithValue("@tipo", _schema.AnexosCvTipoValue);
+            });
+    }
+
+    public async Task<IaEstadoCounts> CountEstadosByRctAsync(string rctStamp, CancellationToken ct = default)
+    {
+        var sql = $"""
+            SELECT c.[{_schema.CveEstadoIaColumn}], COUNT(1)
+            FROM [{_schema.SrtTable}] s
+            LEFT JOIN [{_schema.CveTable}] c
+              ON c.[{_schema.CveStampColumn}] = s.[{_schema.SrtCveStampColumn}]
+            WHERE s.[{_schema.SrtRctStampColumn}] = @rct
+            GROUP BY c.[{_schema.CveEstadoIaColumn}]
+            """;
+
+        await using var conn = _db.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@rct", rctStamp);
+
+        var pendente = 0;
+        var ok = 0;
+        var erro = 0;
+        var semEstado = 0;
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var estado = reader.IsDBNull(0) ? string.Empty : reader.GetString(0).Trim();
+            var count = reader.GetInt32(1);
+            if (estado.Equals(IaEstados.Pendente, StringComparison.OrdinalIgnoreCase))
+                pendente += count;
+            else if (estado.Equals(IaEstados.Ok, StringComparison.OrdinalIgnoreCase))
+                ok += count;
+            else if (estado.Equals(IaEstados.Erro, StringComparison.OrdinalIgnoreCase))
+                erro += count;
+            else
+                semEstado += count;
+        }
+
+        return new IaEstadoCounts
+        {
+            Pendente = pendente,
+            Ok = ok,
+            Erro = erro,
+            SemEstado = semEstado
+        };
+    }
+
     public async Task SaveScoreAsync(
         string srtStamp,
         decimal score,
@@ -43,7 +116,7 @@ public sealed class SrtScoreRepository : ISrtScoreRepository
         string? auditJson,
         CancellationToken ct = default)
     {
-        // BR-02/03/04: UPDATE only IA columns â€” never condp / selection state.
+        // BR-02/03/04/09: UPDATE only IA columns. Never condp / selection.
         var sql = $"""
             UPDATE [{_schema.SrtTable}]
             SET [{_schema.SrtScoreIaColumn}] = @score,
@@ -91,7 +164,9 @@ public sealed class SrtScoreRepository : ISrtScoreRepository
     private async Task<IReadOnlyList<SrtCandidateRow>> QueryAsync(
         string where,
         string key,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? extraAndSql = null,
+        Action<SqlCommand>? bindExtra = null)
     {
         var selectionCols = _schema.SrtSelectionStateColumns
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -117,12 +192,14 @@ public sealed class SrtScoreRepository : ISrtScoreRepository
             LEFT JOIN [{_schema.CveTable}] c
               ON c.[{_schema.CveStampColumn}] = s.[{_schema.SrtCveStampColumn}]
             WHERE s.{where}
+            {extraAndSql}
             """;
 
         await using var conn = _db.Create();
         await conn.OpenAsync(ct);
         await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("@key", key);
+        bindExtra?.Invoke(cmd);
 
         var list = new List<SrtCandidateRow>();
         await using var reader = await cmd.ExecuteReaderAsync(ct);

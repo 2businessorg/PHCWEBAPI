@@ -3,7 +3,9 @@
 **Date:** 2026-09-22  
 **Scope:** STATIC only (Alfredo cannot reach Host — Denilson laptop `http://127.0.0.1:7298` only).  
 **SHA:** `14204ad2cbe3fbf6f3434b38ea13386b5c7790f3` = `main` = `origin/main`  
-**Product code:** unchanged. Live curl: **out of scope for Alfredo** (Imran smoke on Denilson host).
+**Product code:** unchanged in this snapshot. Live curl: **out of scope for Alfredo** (Imran smoke on Denilson host).
+
+**Later product path (2026-09-23):** analyze/status/ranking/reprocess by `idrct` — see `docs/modulos/Recrutamento-IA.md`. The flat `POST /api/recruitment/enqueue` below is legacy. Column names in force are `u_prmveria` and `u_auditia`.
 
 Paths relative to repo root. Line numbers from tree at `14204ad` / this docs branch (module files unchanged).
 

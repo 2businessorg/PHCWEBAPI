@@ -66,6 +66,7 @@ public sealed class GetRctRankingQueryHandler : IRequestHandler<GetRctRankingQue
 
         ForbiddenCopyGuard.ThrowIfForbidden(dto.Title, "title");
         ForbiddenCopyGuard.ThrowIfForbidden(dto.Footer, "footer");
+        ForbiddenCopyGuard.ThrowIfForbidden(dto.PreSelectionNote, "preSelectionNote");
         return dto;
     }
 

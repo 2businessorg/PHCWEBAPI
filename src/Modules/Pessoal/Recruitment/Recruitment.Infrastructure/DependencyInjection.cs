@@ -22,6 +22,7 @@ public static class DependencyInjection
             configuration.GetSection(RecruitmentSchemaOptions.SectionName));
 
         services.AddSingleton<IRecruitmentSqlConnectionFactory, RecruitmentSqlConnectionFactory>();
+        services.AddScoped<IRctVacancyRepository, RctVacancyRepository>();
         services.AddScoped<IRctCriteriaRepository, RctCriteriaRepository>();
         services.AddScoped<IRctIntervenienteRepository, RctIntervenienteRepository>();
         services.AddScoped<ICvAnexoRepository, CvAnexoRepository>();

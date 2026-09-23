@@ -1,3 +1,5 @@
+using System.Data;
+using System.Globalization;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using Recruitment.Domain.Entities;
@@ -6,6 +8,46 @@ using Recruitment.Infrastructure.Options;
 using Recruitment.Infrastructure.Persistence;
 
 namespace Recruitment.Infrastructure.Repositories;
+
+public sealed class RctVacancyRepository : IRctVacancyRepository
+{
+    private readonly IRecruitmentSqlConnectionFactory _db;
+    private readonly RecruitmentSchemaOptions _schema;
+
+    public RctVacancyRepository(
+        IRecruitmentSqlConnectionFactory db,
+        IOptions<RecruitmentSchemaOptions> schema)
+    {
+        _db = db;
+        _schema = schema.Value;
+    }
+
+    public async Task<string?> ResolveStampByIdAsync(string idRct, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(idRct))
+            return null;
+
+        if (!long.TryParse(idRct.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+            return null;
+
+        var sql = $"""
+            SELECT TOP (1) [{_schema.RctStampColumn}]
+            FROM [{_schema.RctTable}]
+            WHERE [{_schema.RctIdColumn}] = @id
+            """;
+
+        await using var conn = _db.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add("@id", SqlDbType.BigInt).Value = id;
+        var result = await cmd.ExecuteScalarAsync(ct);
+        if (result is null or DBNull)
+            return null;
+
+        var stamp = Convert.ToString(result)?.Trim();
+        return string.IsNullOrEmpty(stamp) ? null : stamp;
+    }
+}
 
 public sealed class RctCriteriaRepository : IRctCriteriaRepository
 {

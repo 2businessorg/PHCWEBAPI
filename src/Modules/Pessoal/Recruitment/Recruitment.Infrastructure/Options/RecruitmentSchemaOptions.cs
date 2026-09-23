@@ -19,6 +19,8 @@ public sealed class RecruitmentSchemaOptions
 
     public string RctTable { get; set; } = "rct";
     public string RctStampColumn { get; set; } = "rctstamp";
+    /// <summary>Public vacancy id (PHC rct.idrct). Route key; resolved to rctstamp.</summary>
+    public string RctIdColumn { get; set; } = "idrct";
 
     /// <summary>
     /// Bridge table for RCT characteristics + weights.
@@ -38,9 +40,11 @@ public sealed class RecruitmentSchemaOptions
     public string SrtScoreIaColumn { get; set; } = "u_scoreia";
     public string SrtJustIaColumn { get; set; } = "u_justia";
     public string SrtModeloIaColumn { get; set; } = "u_modeloia";
-    public string SrtPromptVerIaColumn { get; set; } = "u_promptveria";
+    /// <summary>SCAMPOS: suffix after u_ is 8 chars max. u_prmveria (not u_promptveria).</summary>
+    public string SrtPromptVerIaColumn { get; set; } = "u_prmveria";
     public string SrtStampIaColumn { get; set; } = "u_stampia";
-    public string SrtAuditIaColumn { get; set; } = "u_auditoriaia";
+    /// <summary>SCAMPOS: u_auditia (not u_auditoriaia).</summary>
+    public string SrtAuditIaColumn { get; set; } = "u_auditia";
     public string SrtSelectionStateColumns { get; set; } = "estado,apurado,entrevista";
 
     public string AnexosTable { get; set; } = "anexos";

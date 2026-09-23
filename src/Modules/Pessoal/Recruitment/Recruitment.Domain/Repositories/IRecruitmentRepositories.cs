@@ -2,6 +2,15 @@ using Recruitment.Domain.Entities;
 
 namespace Recruitment.Domain.Repositories;
 
+public interface IRctVacancyRepository
+{
+    /// <summary>
+    /// Maps the public vacancy id (rct.idrct) to rctstamp.
+    /// Null when the id is not numeric or the vacancy does not exist.
+    /// </summary>
+    Task<string?> ResolveStampByIdAsync(string idRct, CancellationToken ct = default);
+}
+
 public interface IRctCriteriaRepository
 {
     /// <summary>Usable crt rows for an RCT (weight &gt; 0). Empty ⇒ enqueue forbidden (BR-01).</summary>
@@ -30,6 +39,15 @@ public interface ISrtScoreRepository
     Task<SrtCandidateRow?> GetByStampAsync(string srtStamp, CancellationToken ct = default);
 
     Task<IReadOnlyList<SrtCandidateRow>> GetByRctAsync(string rctStamp, CancellationToken ct = default);
+
+    /// <summary>
+    /// SRT rows of the vacancy that have a CV attachment
+    /// (anexos.oritable=cve, tipo=CV, non-empty bytes).
+    /// </summary>
+    Task<IReadOnlyList<SrtCandidateRow>> ListWithCvByRctAsync(string rctStamp, CancellationToken ct = default);
+
+    /// <summary>Counts of cve.u_estadoia across SRT rows of the vacancy.</summary>
+    Task<IaEstadoCounts> CountEstadosByRctAsync(string rctStamp, CancellationToken ct = default);
 
     /// <summary>
     /// Persists IA score + justification on SRT only (BR-02).
