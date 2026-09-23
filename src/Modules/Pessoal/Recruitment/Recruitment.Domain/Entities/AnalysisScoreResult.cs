@@ -17,7 +17,7 @@ public sealed class AnalysisScoreResult
 
     public bool UsedLlm { get; init; }
 
-    /// <summary>Assisted suggestion only: the five Faela tokens. Null on the offline rubric until persist.</summary>
+    /// <summary>Assisted suggestion only: avancar, em_duvida, or nao_avancar.</summary>
     public string? AssistedDecision { get; init; }
 
     /// <summary>Model rationale for the assisted suggestion. Empty on the offline rubric.</summary>

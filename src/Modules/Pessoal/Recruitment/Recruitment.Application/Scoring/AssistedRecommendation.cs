@@ -5,16 +5,15 @@ using Recruitment.Domain.Entities;
 namespace Recruitment.Application.Scoring;
 
 /// <summary>
-/// Assisted suggestion only. Persisted decision is one of five tokens.
-/// selected, rejected, advanced, hired, approved, auto_*, pass and fail are never stored.
+/// Assisted suggestion only. Persisted decision is avancar, em_duvida, or nao_avancar.
+/// shortlist_suggest, interview_suggest, weak_fit_suggest, insufficient_evidence, conflict_review,
+/// selected, rejected, hired, approved, auto_*, pass and fail are never stored.
 /// </summary>
 public static class AssistedDecisions
 {
-    public const string ShortlistSuggest = "shortlist_suggest";
-    public const string InterviewSuggest = "interview_suggest";
-    public const string WeakFitSuggest = "weak_fit_suggest";
-    public const string InsufficientEvidence = "insufficient_evidence";
-    public const string ConflictReview = "conflict_review";
+    public const string Avancar = "avancar";
+    public const string EmDuvida = "em_duvida";
+    public const string NaoAvancar = "nao_avancar";
 
     public const string StatusEvidenced = "evidenced";
     public const string StatusNoEvidence = "no_evidence";
@@ -24,22 +23,17 @@ public static class AssistedDecisions
 
     public const string DisclaimerPt = HitlCopy.AssistedDisclaimerPt;
 
-    /// <summary>All evidenced and at least this share of RCT weight → shortlist_suggest.</summary>
-    public const decimal ShortlistRatio = 0.85m;
-
-    /// <summary>All evidenced and at least this share, below shortlist → interview_suggest.</summary>
-    public const decimal InterviewRatio = 0.70m;
+    /// <summary>All evidenced and at least this share of RCT weight → avancar. Below it, with evidence → nao_avancar.</summary>
+    public const decimal StrongFitRatio = 0.70m;
 
     public static bool IsAllowed(string? value) =>
-        value is ShortlistSuggest or InterviewSuggest or WeakFitSuggest or InsufficientEvidence or ConflictReview;
+        value is Avancar or EmDuvida or NaoAvancar;
 
     public static string LabelPt(string decision) => decision switch
     {
-        ShortlistSuggest => "Sugestão: incluir na shortlist — decisão humana obrigatória",
-        InterviewSuggest => "Sugestão: marcar entrevista — decisão humana obrigatória",
-        WeakFitSuggest => "Sugestão: ajuste fraco — decisão humana obrigatória",
-        InsufficientEvidence => "Sugestão: evidência insuficiente — decisão humana obrigatória",
-        ConflictReview => "Sugestão: rever conflito — decisão humana obrigatória",
+        Avancar => "Sugestão: avançar — decisão humana obrigatória",
+        EmDuvida => "Sugestão: em dúvida — decisão humana obrigatória",
+        NaoAvancar => "Sugestão: não avançar — decisão humana obrigatória",
         _ => throw new InvalidOperationException("BR-08: decision fora do enum assistido.")
     };
 
@@ -138,22 +132,17 @@ public static class AssistedRecommendationBuilder
         IReadOnlyList<CriterionScoreBreakdown> breakdown,
         IReadOnlyList<CriterionAssessmentDto> criteria)
     {
-        if (criteria.Count == 0)
-            return AssistedDecisions.InsufficientEvidence;
-        if (criteria.Any(c => c.Status == AssistedDecisions.StatusConflict))
-            return AssistedDecisions.ConflictReview;
-        if (criteria.Any(c => c.Status == AssistedDecisions.StatusNoEvidence))
-            return AssistedDecisions.InsufficientEvidence;
+        if (criteria.Count == 0
+            || criteria.Any(c => c.Status is AssistedDecisions.StatusConflict or AssistedDecisions.StatusNoEvidence))
+            return AssistedDecisions.EmDuvida;
 
         var weight = breakdown.Sum(b => b.Weight);
         if (weight <= 0)
-            return AssistedDecisions.InsufficientEvidence;
+            return AssistedDecisions.EmDuvida;
 
         var ratio = breakdown.Sum(b => b.Note) / weight;
-        if (ratio >= AssistedDecisions.ShortlistRatio)
-            return AssistedDecisions.ShortlistSuggest;
-        if (ratio >= AssistedDecisions.InterviewRatio)
-            return AssistedDecisions.InterviewSuggest;
-        return AssistedDecisions.WeakFitSuggest;
+        return ratio >= AssistedDecisions.StrongFitRatio
+            ? AssistedDecisions.Avancar
+            : AssistedDecisions.NaoAvancar;
     }
 }
