@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Hangfire;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,8 @@ public sealed class AnalyzeCandidateJob
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
+        WriteIndented = false,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     private readonly IRecruitmentOutboxRepository _outbox;
@@ -225,6 +227,7 @@ public sealed class AnalyzeCandidateJob
             ForbiddenCopyGuard.ThrowIfForbidden(row.JustificationPt, row.Code);
         }
 
+        var assisted = AssistedRecommendationBuilder.Build(score.Breakdown);
         var payload = new JustificationPayloadDto
         {
             Engine = score.EngineName,
@@ -232,6 +235,19 @@ public sealed class AnalyzeCandidateJob
             StampUtc = score.StampUtc,
             UsedLlm = score.UsedLlm,
             Total = score.TotalScore,
+            ScoreIsInputNotDecision = true,
+            HumanDecisionRequired = true,
+            DisclaimerPt = AssistedDecisions.DisclaimerPt,
+            CandidateAlias = CandidateAlias(item.SrtStamp),
+            Recommendation = new AssistedRecommendationDto
+            {
+                Decision = assisted.Decision,
+                LabelPt = assisted.LabelPt,
+                DecisionNote = assisted.DecisionNote
+            },
+            Criteria = assisted.Criteria,
+            GapsPt = assisted.GapsPt,
+            Conflicts = assisted.Conflicts,
             Breakdown = score.Breakdown.Select(b => new CriterionBreakdownDto
             {
                 Code = b.Code,
@@ -282,6 +298,12 @@ public sealed class AnalyzeCandidateJob
     }
 
 
+    private static string CandidateAlias(string srtStamp)
+    {
+        var stamp = (srtStamp ?? string.Empty).Trim();
+        return stamp.Length == 0 ? "cand-unknown" : "cand-" + stamp;
+    }
+
     private string ScoreFailureMessage(Exception ex)
     {
         if (!_engines.CloudEnabled)
@@ -322,6 +344,8 @@ public sealed class AnalyzeCandidateJob
             engine = score.EngineName,
             prompt_ver = score.PromptVer,
             model = score.EngineName,
+            job_stamp_utc = score.StampUtc,
+            ocr_stamp_utc = score.StampUtc,
             egress_allowed = egress.EgressAllowed,
             entity_count = entities?.Count ?? 0,
             entity_types = entityTypes,

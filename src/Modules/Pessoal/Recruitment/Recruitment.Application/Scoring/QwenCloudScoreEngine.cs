@@ -12,7 +12,7 @@ namespace Recruitment.Application.Scoring;
 /// </summary>
 public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 {
-    public const string PromptVer = "qwen-cloud-v1";
+    public const string PromptVer = "qwen-cloud-v2";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -58,6 +58,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         if (total < 0) total = 0;
         if (total > 100) total = 100;
 
+        var assisted = AssistedRecommendationBuilder.Build(breakdown);
+
         return new AnalysisScoreResult
         {
             TotalScore = decimal.Round(total, 2, MidpointRounding.AwayFromZero),
@@ -65,7 +67,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             EngineName = _llm.ModelName,
             PromptVer = PromptVer,
             StampUtc = DateTime.UtcNow,
-            UsedLlm = true
+            UsedLlm = true,
+            AssistedDecision = assisted.Decision
         };
     }
 
@@ -76,8 +79,10 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         "Se note>0, quote e uma citacao contigua exacta do texto (maximo 240 caracteres). " +
         "Se nao ha evidencia, note=0, quote vazio, justificationPt=\"sem evidencia no CV\". " +
         "Justificacao em pt-PT. Nao inventes factos fora do texto. " +
-        "O score e input ao RH. Nao declares decisao de avancar ou rejeitar. " +
-        "Formato: {\"criteria\":[{\"code\":\"\",\"note\":0,\"quote\":\"\",\"justificationPt\":\"\",\"conflito\":false}]}";
+        "O score e input ao RH. A sugestao assistida usa so decision avancar, em_duvida ou nao_avancar. " +
+        "Sem evidencia ou conflito no criterio: a sugestao e em_duvida. " +
+        "Formato: {\"criteria\":[{\"code\":\"\",\"note\":0,\"quote\":\"\",\"justificationPt\":\"\",\"conflito\":false}]," +
+        "\"recommendation\":{\"decision\":\"em_duvida\"}}";
 
     internal static string BuildUserPrompt(string evidenceText, IReadOnlyList<RctCriterion> criteria)
     {
@@ -113,6 +118,35 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         }
 
         return doc?.Criteria ?? new List<CloudCriterionRow>();
+    }
+
+    /// <summary>
+    /// Model decision is kept only when it is avancar, em_duvida, or nao_avancar.
+    /// Any other token is dropped and is not copied into the score.
+    /// </summary>
+    public static string? ReadAllowedDecision(string? content)
+    {
+        var json = ExtractJson(content);
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("recommendation", out var recommendation)
+                && !doc.RootElement.TryGetProperty("Recommendation", out recommendation))
+                return null;
+
+            if (recommendation.ValueKind != JsonValueKind.Object)
+                return null;
+
+            if (!recommendation.TryGetProperty("decision", out var decision)
+                && !recommendation.TryGetProperty("Decision", out decision))
+                return null;
+
+            return AssistedDecisions.TryNormalize(decision.GetString());
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     internal static string ExtractJson(string? content)

@@ -180,6 +180,69 @@ public sealed class JustificationPayloadDto
     [JsonPropertyName("total")]
     public decimal Total { get; init; }
 
+    [JsonPropertyName("scoreIsInputNotDecision")]
+    public bool ScoreIsInputNotDecision { get; init; } = true;
+
+    [JsonPropertyName("humanDecisionRequired")]
+    public bool HumanDecisionRequired { get; init; } = true;
+
+    [JsonPropertyName("disclaimerPt")]
+    public string DisclaimerPt { get; init; } = HitlCopy.AssistedDisclaimerPt;
+
+    /// <summary>SRT alias. Never a person name or CV value.</summary>
+    [JsonPropertyName("candidateAlias")]
+    public string CandidateAlias { get; init; } = string.Empty;
+
+    [JsonPropertyName("recommendation")]
+    public AssistedRecommendationDto? Recommendation { get; init; }
+
+    [JsonPropertyName("criteria")]
+    public IReadOnlyList<CriterionAssessmentDto> Criteria { get; init; } = Array.Empty<CriterionAssessmentDto>();
+
+    [JsonPropertyName("gapsPt")]
+    public IReadOnlyList<string> GapsPt { get; init; } = Array.Empty<string>();
+
+    [JsonPropertyName("conflicts")]
+    public IReadOnlyList<CriterionConflictDto> Conflicts { get; init; } = Array.Empty<CriterionConflictDto>();
+
     [JsonPropertyName("breakdown")]
     public IReadOnlyList<CriterionBreakdownDto> Breakdown { get; init; } = Array.Empty<CriterionBreakdownDto>();
+}
+
+/// <summary>Assisted suggestion. decision is only avancar | em_duvida | nao_avancar.</summary>
+public sealed class AssistedRecommendationDto
+{
+    [JsonPropertyName("decision")]
+    public required string Decision { get; init; }
+
+    [JsonPropertyName("labelPt")]
+    public required string LabelPt { get; init; }
+
+    [JsonPropertyName("decision_note")]
+    public required string DecisionNote { get; init; }
+}
+
+public sealed class CriterionAssessmentDto
+{
+    [JsonPropertyName("code")]
+    public required string Code { get; init; }
+
+    /// <summary>evidenced | no_evidence | conflict</summary>
+    [JsonPropertyName("status")]
+    public required string Status { get; init; }
+
+    [JsonPropertyName("weightSource")]
+    public string WeightSource { get; init; } = "rct";
+
+    [JsonPropertyName("gapsPt")]
+    public IReadOnlyList<string> GapsPt { get; init; } = Array.Empty<string>();
+}
+
+public sealed class CriterionConflictDto
+{
+    [JsonPropertyName("code")]
+    public required string Code { get; init; }
+
+    [JsonPropertyName("quotes")]
+    public IReadOnlyList<string> Quotes { get; init; } = Array.Empty<string>();
 }

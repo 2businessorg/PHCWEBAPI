@@ -67,10 +67,98 @@ public class QwenCloudScoreTests
         score.UsedLlm.Should().BeTrue();
         score.EngineName.Should().Be("qwen3-coder-next");
         score.PromptVer.Should().Be(QwenCloudScoreEngine.PromptVer);
+        score.AssistedDecision.Should().Be(AssistedDecisions.Avancar);
         score.Breakdown.Single().Quote.Should().Be(Quote);
         llm.LastUser.Should().Contain(Pseudo);
         llm.LastUser.Should().NotContain(RawSecret);
     }
+
+    [Theory]
+    [InlineData("avancar", "avancar")]
+    [InlineData("em_duvida", "em_duvida")]
+    [InlineData("nao_avancar", "nao_avancar")]
+    [InlineData("shortlist_suggest", null)]
+    [InlineData("interview_suggest", null)]
+    [InlineData("weak_fit_suggest", null)]
+    [InlineData("insufficient_evidence", null)]
+    [InlineData("conflict_review", null)]
+    [InlineData("hire", null)]
+    [InlineData("reject", null)]
+    [InlineData("selected", null)]
+    [InlineData("rejected", null)]
+    [InlineData("approved", null)]
+    [InlineData("auto_advance", null)]
+    [InlineData("pass", null)]
+    [InlineData("fail", null)]
+    public void Parser_KeepsOnlyThreeDecisionValues(string raw, string? expected)
+    {
+        var json = $$"""{"recommendation":{"decision":"{{raw}}"},"criteria":[]}""";
+        QwenCloudScoreEngine.ReadAllowedDecision(json).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task QwenEngine_KilledDecisionToken_IsNotThePersistedSuggestion()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = $$"""
+                {"recommendation":{"decision":"hire"},"criteria":[{"code":"CRT-STACK","note":20,"quote":"{{Quote}}","justificationPt":"Evidencia de stack no texto.","conflito":false}]}
+                """
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.AssistedDecision.Should().Be(AssistedDecisions.Avancar);
+        AssistedDecisions.IsAllowed(score.AssistedDecision).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Recommendation_ConflictOrNoEvidence_IsEmDuvida_WeakFit_IsNaoAvancar()
+    {
+        var conflict = AssistedRecommendationBuilder.Build(
+        [
+            Row("CRT-A", 25, 20, Quote, conflito: true)
+        ]);
+        conflict.Decision.Should().Be(AssistedDecisions.EmDuvida);
+        conflict.Criteria.Single().Status.Should().Be(AssistedDecisions.StatusConflict);
+        conflict.Conflicts.Single().Code.Should().Be("CRT-A");
+        conflict.LabelPt.Should().Be("Sugestão: em dúvida — decisão humana obrigatória");
+        conflict.DecisionNote.Should().Be(HitlCopy.AssistedDisclaimerPt);
+
+        var missing = AssistedRecommendationBuilder.Build(
+        [
+            Row("CRT-A", 25, 0, null, conflito: false)
+        ]);
+        missing.Decision.Should().Be(AssistedDecisions.EmDuvida);
+        missing.Criteria.Single().Status.Should().Be(AssistedDecisions.StatusNoEvidence);
+        missing.GapsPt.Should().NotBeEmpty();
+
+        var weak = AssistedRecommendationBuilder.Build(
+        [
+            Row("CRT-A", 25, 8, Quote, conflito: false)
+        ]);
+        weak.Decision.Should().Be(AssistedDecisions.NaoAvancar);
+        weak.Criteria.Single().Status.Should().Be(AssistedDecisions.StatusEvidenced);
+        weak.LabelPt.Should().Be("Sugestão: não avançar — decisão humana obrigatória");
+        weak.Criteria.Single().WeightSource.Should().Be("rct");
+    }
+
+    private static CriterionScoreBreakdown Row(string code, decimal weight, decimal note, string? quote, bool conflito) =>
+        new()
+        {
+            Code = code,
+            Label = code,
+            Weight = weight,
+            Note = note,
+            Quote = quote,
+            SemEvidencia = note <= 0,
+            Conflito = conflito,
+            ConflictQuotes = conflito && quote is not null ? new[] { quote } : Array.Empty<string>(),
+            JustificationPt = note <= 0 ? HitlCopy.SemEvidencia : "Evidencia citada."
+        };
 
     [Fact]
     public async Task QwenEngine_QuoteOutsidePseudonymizedText_ThrowsAh02()
@@ -194,13 +282,15 @@ public class QwenCloudScoreTests
 
         string? audit = null;
         string? engine = null;
+        string? justification = null;
         var (job, srt, _) = CreateCloudJob(
             rubric.Object,
             cloud.Object,
             egressAllowed: true,
             failure: null,
-            onSave: (savedEngine, savedAudit) =>
+            onSave: (savedJson, savedEngine, savedAudit) =>
             {
+                justification = savedJson;
                 engine = savedEngine;
                 audit = savedAudit;
             });
@@ -215,12 +305,25 @@ public class QwenCloudScoreTests
         audit.Should().Contain("PERSON");
         audit.Should().Contain("EMAIL_ADDRESS");
         audit.Should().Contain("\"leak_check_passed\":true");
-        audit.Should().Contain("qwen-cloud-v1");
+        audit.Should().Contain("qwen-cloud-v2");
+        audit.Should().Contain("job_stamp_utc");
+        audit.Should().Contain("ocr_stamp_utc");
         audit.Should().NotContain(RawSecret);
         audit.Should().NotContain(Pseudo);
         audit.Should().NotContain("maria@example.com");
         userPrompt.Should().Contain(Pseudo);
         userPrompt.Should().NotContain(RawSecret);
+        justification.Should().Contain("\"decision\":\"avancar\"");
+        justification.Should().Contain("Sugestão: avançar — decisão humana obrigatória");
+        justification.Should().Contain(HitlCopy.AssistedDisclaimerPt);
+        justification.Should().Contain("\"humanDecisionRequired\":true");
+        justification.Should().Contain("\"scoreIsInputNotDecision\":true");
+        justification.Should().Contain("\"status\":\"evidenced\"");
+        justification.Should().Contain("\"weightSource\":\"rct\"");
+        justification.Should().Contain("\"candidateAlias\":\"cand-SRT2\"");
+        justification.Should().NotContain("shortlist_suggest");
+        justification.Should().NotContain("hire");
+        justification.Should().NotContain(RawSecret);
         rubric.Verify(x => x.Score(It.IsAny<string?>(), It.IsAny<IReadOnlyList<RctCriterion>>()), Times.Never);
     }
 
@@ -273,7 +376,7 @@ public class QwenCloudScoreTests
         IRecruitmentLlmClient llm,
         bool egressAllowed,
         string? failure,
-        Action<string?, string?>? onSave = null)
+        Action<string, string?, string?>? onSave = null)
     {
         var outboxId = 7L;
         var item = new RecruitmentOutboxItem
@@ -323,7 +426,7 @@ public class QwenCloudScoreTests
                     It.IsAny<string?>(),
                     It.IsAny<CancellationToken>()))
                 .Callback<string, decimal, string, string?, string?, DateTime, string?, CancellationToken>(
-                    (_, _, _, modelo, _, _, audit, _) => onSave(modelo, audit))
+                    (_, _, json, modelo, _, _, audit, _) => onSave(json, modelo, audit))
                 .Returns(Task.CompletedTask);
         }
 

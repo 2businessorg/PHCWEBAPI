@@ -16,4 +16,7 @@ public sealed class AnalysisScoreResult
     public required DateTime StampUtc { get; init; }
 
     public bool UsedLlm { get; init; }
+
+    /// <summary>Assisted suggestion only: avancar | em_duvida | nao_avancar. Null on the offline rubric.</summary>
+    public string? AssistedDecision { get; init; }
 }
