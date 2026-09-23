@@ -64,3 +64,5 @@ Prefix: `:21` `[Route("api/recruitment")]` · Auth: `AppPolicies.ApiAccess` · M
 **Imran:** run smoke checklist on Denilson `127.0.0.1:7298` using route map above + SQL overlay `scripts/Recruitment_AddIaColumns.sql`.
 
 **Known static gaps (not Fail on AH-02/04/08):** ranking read-path does not re-`AssertQuoteIsSubset` against live `u_texto` (`GetRctRankingQuery.cs` parse-only `:68-81`); `FailAsync` does not clear prior score; no cancel API; lab weights table `u_rec_ia_crt` (prod must mirror RCT).
+
+**Cloud AH-02 (lab 2026-09-23):** Qwen quotes are matched with a deterministic whitespace/Unicode fold against the pseudonymized text the model saw. A quote that is still not a subset zeros that criterion (`note=0`, justification `AH-02: citacao rejeitada; criterio sem nota.`) and does not fail the candidate. Rubric `AssertQuoteIsSubset` and non-LLM ranking still throw on an invented quote.

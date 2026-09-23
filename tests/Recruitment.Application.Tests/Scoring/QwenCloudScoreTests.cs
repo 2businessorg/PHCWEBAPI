@@ -244,20 +244,52 @@ public class QwenCloudScoreTests
     }
 
     [Fact]
-    public async Task QwenEngine_QuoteOutsidePseudonymizedText_ThrowsAh02()
+    public async Task QwenEngine_QuoteWithNormalizedWhitespace_KeepsNoteAndOriginalSpan()
     {
+        var evidence = "Experiencia em SQL\u00A0e  PHC no ultimo ano.";
         var llm = new StubLlm("qwen3-coder-next")
         {
-            Response = """{"criteria":[{"code":"CRT-STACK","note":10,"quote":"frase inventada","justificationPt":"ok"}]}"""
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}""")
         };
         var engine = new QwenCloudScoreEngine(llm);
 
-        var act = async () => await engine.ScoreAsync(
+        var score = await engine.ScoreAsync(
+            evidence,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        var row = score.Breakdown.Single();
+        row.Note.Should().Be(18);
+        row.Quote.Should().Be("SQL\u00A0e  PHC");
+        evidence.Should().Contain(row.Quote);
+        var act = () => RubricEvidenceScorer.AssertQuoteIsSubset(evidence, row.Quote);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public async Task QwenEngine_InventedQuote_ZerosCriterion_WithoutThrowing()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":10,"quote":"frase inventada","justificationPt":"ok"}""")
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
             Pseudo,
             [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*AH-02*");
+        var row = score.Breakdown.Single();
+        row.Note.Should().Be(0);
+        row.Quote.Should().BeNull();
+        row.SemEvidencia.Should().BeTrue();
+        row.JustificationPt.Should().Be(QwenCloudScoreEngine.RejectedQuoteJustification);
+        score.TotalScore.Should().Be(0);
+        score.AssistedDecision.Should().Be(AssistedDecisions.EmDuvida);
+        Pseudo.Should().NotContain("frase inventada");
     }
 
     [Fact]
@@ -347,6 +379,58 @@ public class QwenCloudScoreTests
             It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<string>(),
             It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Never);
+        rubric.Verify(x => x.Score(It.IsAny<string?>(), It.IsAny<IReadOnlyList<RctCriterion>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Job_CloudInventedQuote_PersistsZeroNote_DoesNotFailCandidate()
+    {
+        var rubric = new Mock<IRubricEvidenceScorer>(MockBehavior.Strict);
+        var cloud = new Mock<IRecruitmentLlmClient>();
+        cloud.SetupGet(x => x.ModelName).Returns("qwen3-coder-next");
+        cloud.Setup(x => x.CompleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CloudJson(
+                """{"code":"CRT-STACK","note":10,"quote":"frase inventada","justificationPt":"ok"}"""));
+
+        string? justification = null;
+        decimal? savedScore = null;
+        var (job, srt, cve) = CreateCloudJob(
+            rubric.Object,
+            cloud.Object,
+            egressAllowed: true,
+            failure: null);
+
+        srt.Setup(x => x.SaveScoreAsync(
+                "SRT2",
+                It.IsAny<decimal>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<string, decimal, string, string?, string?, DateTime, string?, CancellationToken>(
+                (_, score, json, _, _, _, _, _) =>
+                {
+                    savedScore = score;
+                    justification = json;
+                })
+            .Returns(Task.CompletedTask);
+
+        await job.ExecuteAsync(7, CancellationToken.None);
+
+        savedScore.Should().Be(0);
+        justification.Should().NotBeNull();
+        justification.Should().Contain(QwenCloudScoreEngine.RejectedQuoteJustification);
+        justification.Should().NotContain("frase inventada");
+        var payload = JsonSerializer.Deserialize<JustificationPayloadDto>(
+            justification!,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        payload!.Criteria.Single().Note.Should().Be(0);
+        payload.Criteria.Single().SemEvidencia.Should().BeTrue();
+        payload.Recommendation!.Decision.Should().Be(AssistedDecisions.EmDuvida);
+        cve.Verify(x => x.SetEstadoIaAsync("CVE2", IaEstados.Ok, It.IsAny<CancellationToken>()), Times.Once);
+        cve.Verify(x => x.SetEstadoIaAsync("CVE2", IaEstados.Erro, It.IsAny<CancellationToken>()), Times.Never);
         rubric.Verify(x => x.Score(It.IsAny<string?>(), It.IsAny<IReadOnlyList<RctCriterion>>()), Times.Never);
     }
 

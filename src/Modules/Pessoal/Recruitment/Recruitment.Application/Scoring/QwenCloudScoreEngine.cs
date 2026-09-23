@@ -14,6 +14,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 {
     public const string PromptVer = "qwen-cloud-v5";
 
+    public const string RejectedQuoteJustification = "AH-02: citacao rejeitada; criterio sem nota.";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -237,24 +239,34 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         note = decimal.Round(note, 2, MidpointRounding.AwayFromZero);
 
         var quote = string.IsNullOrWhiteSpace(row?.Quote) ? null : row!.Quote!.Trim();
-        if (quote is not null && quote.Length > RubricEvidenceScorer.MaxQuoteLength)
-            quote = quote[..RubricEvidenceScorer.MaxQuoteLength];
-
+        var quoteRejected = false;
         if (note > 0)
         {
-            if (string.IsNullOrEmpty(quote))
-                throw new InvalidOperationException($"AH-02: criterio {crt.Code} com nota sem citacao.");
-
-            RubricEvidenceScorer.AssertQuoteIsSubset(evidenceText, quote);
+            if (!RubricEvidenceScorer.TryResolveQuote(evidenceText, quote, out var resolved) || resolved is null)
+            {
+                // AH-02 still falsifies the criterion. An invented or whitespace-broken
+                // quote zeros this row only; the rest of the candidate is scored.
+                note = 0;
+                quote = null;
+                quoteRejected = true;
+            }
+            else
+            {
+                quote = resolved.Length > RubricEvidenceScorer.MaxQuoteLength
+                    ? resolved[..RubricEvidenceScorer.MaxQuoteLength]
+                    : resolved;
+            }
         }
         else
         {
             quote = null;
         }
 
-        var justification = string.IsNullOrWhiteSpace(row?.JustificationPt)
-            ? (note <= 0 ? HitlCopy.SemEvidencia : $"Evidencia encontrada para '{crt.Label}'.")
-            : row!.JustificationPt!.Trim();
+        var justification = quoteRejected
+            ? RejectedQuoteJustification
+            : string.IsNullOrWhiteSpace(row?.JustificationPt)
+                ? (note <= 0 ? HitlCopy.SemEvidencia : $"Evidencia encontrada para '{crt.Label}'.")
+                : row!.JustificationPt!.Trim();
         ForbiddenCopyGuard.ThrowIfForbidden(justification, crt.Code);
 
         var offset = quote is null ? (int?)null : evidenceText.IndexOf(quote, StringComparison.Ordinal);
@@ -271,7 +283,9 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             QuoteOffset = note > 0 ? offset : null,
             SemEvidencia = note <= 0,
             Conflito = row?.Conflito == true && note > 0,
-            JustificationPt = note <= 0 ? HitlCopy.SemEvidencia : justification
+            JustificationPt = quoteRejected
+                ? RejectedQuoteJustification
+                : note <= 0 ? HitlCopy.SemEvidencia : justification
         };
     }
 

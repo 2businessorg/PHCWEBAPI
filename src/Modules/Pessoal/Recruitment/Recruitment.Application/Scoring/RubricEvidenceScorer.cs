@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Recruitment.Domain.Constants;
 using Recruitment.Domain.Entities;
@@ -199,6 +200,97 @@ public sealed class RubricEvidenceScorer : IRubricEvidenceScorer
                 "AH-02: citacao nao pertence a u_texto (falsificador RH / DTTest).");
         }
     }
+
+    /// <summary>
+    /// Resolves a model quote to a contiguous slice of <paramref name="uTexto"/>.
+    /// Exact match first, then a deterministic whitespace/Unicode fold
+    /// (NFKC, NBSP and thin spaces to space, zero-width dropped, whitespace collapsed).
+    /// The returned slice is always an ordinal subset of the original text.
+    /// </summary>
+    public static bool TryResolveQuote(string uTexto, string? quote, out string? resolved)
+    {
+        resolved = null;
+        if (string.IsNullOrWhiteSpace(quote) || string.IsNullOrEmpty(uTexto))
+            return false;
+
+        var exact = uTexto.IndexOf(quote, StringComparison.Ordinal);
+        if (exact >= 0)
+        {
+            resolved = uTexto.Substring(exact, quote.Length);
+            return true;
+        }
+
+        var ignoreCase = uTexto.IndexOf(quote, StringComparison.OrdinalIgnoreCase);
+        if (ignoreCase >= 0)
+        {
+            resolved = uTexto.Substring(ignoreCase, quote.Length);
+            return true;
+        }
+
+        var (normEvidence, map) = NormalizeWithMap(uTexto);
+        var normQuote = NormalizeQuote(quote);
+        if (normQuote.Length == 0 || map.Length == 0)
+            return false;
+
+        var idx = normEvidence.IndexOf(normQuote, StringComparison.Ordinal);
+        if (idx < 0)
+            idx = normEvidence.IndexOf(normQuote, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0 || idx + normQuote.Length > map.Length)
+            return false;
+
+        var start = map[idx];
+        var end = map[idx + normQuote.Length - 1] + 1;
+        if (start < 0 || end > uTexto.Length || end <= start)
+            return false;
+
+        resolved = uTexto[start..end];
+        return uTexto.IndexOf(resolved, StringComparison.Ordinal) >= 0;
+    }
+
+    private static string NormalizeQuote(string quote) => NormalizeWithMap(quote).Normalized;
+
+    private static (string Normalized, int[] Map) NormalizeWithMap(string text)
+    {
+        var chars = new StringBuilder(text.Length);
+        var map = new List<int>(text.Length);
+        var previousWasSpace = false;
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            var piece = text[i].ToString().Normalize(NormalizationForm.FormKC);
+            foreach (var n in piece)
+            {
+                if (IsDroppedFormatChar(n))
+                    continue;
+
+                var ch = IsFoldableSpace(n) ? ' ' : n;
+                if (ch == ' ')
+                {
+                    if (previousWasSpace)
+                        continue;
+                    previousWasSpace = true;
+                }
+                else
+                {
+                    previousWasSpace = false;
+                }
+
+                chars.Append(ch);
+                map.Add(i);
+            }
+        }
+
+        return (chars.ToString(), map.ToArray());
+    }
+
+    private static bool IsDroppedFormatChar(char c) =>
+        c is '\u00AD' or '\u200B' or '\u200C' or '\u200D' or '\uFEFF';
+
+    private static bool IsFoldableSpace(char c) =>
+        c is ' ' or '\t' or '\n' or '\r' or '\u00A0' or '\u2000' or '\u2001' or '\u2002'
+            or '\u2003' or '\u2004' or '\u2005' or '\u2006' or '\u2007' or '\u2008' or '\u2009'
+            or '\u200A' or '\u202F' or '\u205F' or '\u3000'
+        || char.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator;
 
     private sealed record EvidenceMatch(string Hint, string Excerpt, int Offset);
 }

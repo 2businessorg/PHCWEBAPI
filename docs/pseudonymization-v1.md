@@ -47,6 +47,8 @@ Normalize → Detect (Presidio + regex/dict/context) → Classify → Resolve �
 
 See `sidecar/presidio-2b/README.md`. Endpoints: `/health`, `/analyze`, `/anonymize`.
 
+EMAIL, PHONE (PT and Mozambique `+258`) and NIF recognizers are registered for both `en` and `pt`, and `/analyze` merges the same patterns if the spaCy language falls back. `en_core_web_sm` / `pt_core_news_sm` are downloaded at image build, not on the first request. A missing model keeps the sidecar in pattern-only mode. Do not turn off `RequireSidecarForCloudEgress` or the leak checker. The C# detector and `IndependentLeakChecker` share those phone patterns, including `+258`.
+
 ## DoD checklist (architecture section 25) — what landed
 
 - [x] `IDocumentPseudonymizer` in shared lib (not only Recruitment folder)

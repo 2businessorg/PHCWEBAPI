@@ -144,7 +144,9 @@ public sealed class TokenizeAndPersistStep : IPseudonymizationStep
 
     private static string ApplyReplacements(string text, List<(int Start, int End, string Token)> replacements)
     {
-        // Drop overlapping mentions (keep longest / first by start then length).
+        // Earliest start, then longest. A later span that still extends past the
+        // accepted cursor is redacted from the cursor, so a short overlap cannot
+        // leave a contact tail for the leak checker.
         var ordered = replacements
             .OrderBy(r => r.Start)
             .ThenByDescending(r => r.End - r.Start)
@@ -154,9 +156,10 @@ public sealed class TokenizeAndPersistStep : IPseudonymizationStep
         var cursor = 0;
         foreach (var r in ordered)
         {
-            if (r.Start < cursor)
+            if (r.End <= cursor)
                 continue;
-            accepted.Add(r);
+            var start = Math.Max(r.Start, cursor);
+            accepted.Add((start, r.End, r.Token));
             cursor = r.End;
         }
 

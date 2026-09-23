@@ -11,6 +11,23 @@ Stateless Analyzer/Anonymizer for the shared `IDocumentPseudonymizer` .NET libra
 | POST | `/analyze` | `{ "text", "language" }` → entities |
 | POST | `/anonymize` | Optional redaction helper (map still owned by C#) |
 
+## Lab vs prod
+
+`RequireSidecarForCloudEgress` and the independent leak checker stay on. This sidecar does not disable either of them.
+
+| | Lab host | Prod image |
+|---|---|---|
+| spaCy models | Optional. If `pt_core_news_sm` / `en_core_web_sm` are missing, `/health` reports `nlp=pattern-only` and the process still starts. | `Dockerfile` downloads `en_core_web_sm` and `pt_core_news_sm` at **image build**. No model download on the first request. |
+| EMAIL, PHONE (PT `+351` and Mozambique `+258` 82–87), NIF | Regex recognizers registered for **both** `en` and `pt`. `/analyze` also merges `contact_patterns.find_contacts`, so a language fallback to `en` cannot drop them. | Same patterns, plus PERSON/LOCATION from the installed spaCy models. |
+| Blank spaCy | Not used as the detector. A blank model does not see contacts and is not a startup shortcut. | Not used. |
+
+Install models once, at setup or image build, when you want NER beyond the contact patterns:
+
+```bash
+python -m spacy download en_core_web_sm
+python -m spacy download pt_core_news_sm
+```
+
 ## Run locally
 
 ```bash
@@ -18,7 +35,8 @@ cd sidecar/presidio-2b
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-# optional: python -m spacy download pt_core_news_sm
+python -m unittest test_contact_patterns.py
+# optional NER: python -m spacy download en_core_web_sm && python -m spacy download pt_core_news_sm
 uvicorn app:app --host 127.0.0.1 --port 5001
 ```
 
