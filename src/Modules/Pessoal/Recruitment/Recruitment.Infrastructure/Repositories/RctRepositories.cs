@@ -1,7 +1,7 @@
 using System.Data;
-using System.Globalization;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
+using Recruitment.Domain.Constants;
 using Recruitment.Domain.Entities;
 using Recruitment.Domain.Repositories;
 using Recruitment.Infrastructure.Options;
@@ -27,19 +27,20 @@ public sealed class RctVacancyRepository : IRctVacancyRepository
         if (string.IsNullOrWhiteSpace(idRct))
             return null;
 
-        if (!long.TryParse(idRct.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+        var id = idRct.Trim();
+        if (id.Length > RctIds.MaxLength)
             return null;
 
         var sql = $"""
             SELECT TOP (1) [{_schema.RctStampColumn}]
             FROM [{_schema.RctTable}]
-            WHERE [{_schema.RctIdColumn}] = @id
+            WHERE LTRIM(RTRIM(CAST([{_schema.RctIdColumn}] AS nvarchar({RctIds.MaxLength})))) = @id
             """;
 
         await using var conn = _db.Create();
         await conn.OpenAsync(ct);
         await using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.Add("@id", SqlDbType.BigInt).Value = id;
+        cmd.Parameters.Add("@id", SqlDbType.NVarChar, RctIds.MaxLength).Value = id;
         var result = await cmd.ExecuteScalarAsync(ct);
         if (result is null or DBNull)
             return null;

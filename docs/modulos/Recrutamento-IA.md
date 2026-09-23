@@ -61,7 +61,7 @@ POST /api/recruitment/{idrct}/analyze
 }
 ```
 
-`requestedBy` and `labGoRef` are optional on analyze. The handler selects every SRT of that vacancy with a CV in `anexos` (`oritable='cve'`, `recstamp=cvestamp`, `tipo=1`, non-empty `bdados`) and calls `TryEnqueueAsync` + Hangfire for each. BR-01 (`crt≥1` and `RCTCLB≥1`) still refuses inside `TryEnqueueAsync`.
+`idrct` is the PHC string on `rct.idrct` (for example `LABIA20260922162711`), trimmed, at most 50 characters. `requestedBy` and `labGoRef` are optional on analyze. The handler selects every SRT of that vacancy with a CV in `anexos` (`oritable='cve'`, `recstamp=cvestamp`, `tipo=1`, non-empty `bdados`) and calls `TryEnqueueAsync` + Hangfire for each. BR-01 (`crt≥1` and `RCTCLB≥1`) still refuses inside `TryEnqueueAsync`.
 
 ```http
 GET /api/recruitment/{idrct}/status

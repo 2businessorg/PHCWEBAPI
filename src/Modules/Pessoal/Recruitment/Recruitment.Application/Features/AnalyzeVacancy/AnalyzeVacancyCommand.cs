@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Recruitment.Application.DTOs;
 using Recruitment.Application.Features.EnqueueAnalysis;
+using Recruitment.Domain.Constants;
 using Recruitment.Domain.Repositories;
 
 namespace Recruitment.Application.Features.AnalyzeVacancy;
@@ -99,8 +100,8 @@ public sealed class AnalyzeVacancyCommandHandler
             throw new ArgumentException("idrct obrigatorio.");
 
         var trimmed = idRct.Trim();
-        if (!long.TryParse(trimmed, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out _))
-            throw new ArgumentException("idrct tem de ser numerico.");
+        if (trimmed.Length > RctIds.MaxLength)
+            throw new ArgumentException($"idrct excede {RctIds.MaxLength} caracteres.");
 
         return trimmed;
     }

@@ -5,8 +5,8 @@ namespace Recruitment.Domain.Repositories;
 public interface IRctVacancyRepository
 {
     /// <summary>
-    /// Maps the public vacancy id (rct.idrct) to rctstamp.
-    /// Null when the id is not numeric or the vacancy does not exist.
+    /// Maps the public vacancy id (rct.idrct, a PHC string) to rctstamp.
+    /// Null when the id is empty, longer than 50 characters, or the vacancy does not exist.
     /// </summary>
     Task<string?> ResolveStampByIdAsync(string idRct, CancellationToken ct = default);
 }

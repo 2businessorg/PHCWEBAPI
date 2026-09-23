@@ -96,6 +96,66 @@ public class VacancyByIdEndpointsTests
     }
 
     [Fact]
+    public async Task Analyze_StringIdRct_LabVacancy_ResolvesAndEnqueues()
+    {
+        const string idRct = "LABIA20260922162711";
+        var vacancies = new Mock<IRctVacancyRepository>();
+        vacancies.Setup(x => x.ResolveStampByIdAsync(idRct, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("RCT-LAB");
+
+        var srt = new Mock<ISrtScoreRepository>(MockBehavior.Strict);
+        srt.Setup(x => x.ListWithCvByRctAsync("RCT-LAB", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<SrtCandidateRow> { Row("SRT-LAB", "CVE-LAB", "RCT-LAB", score: null) });
+
+        var enqueue = new Mock<IRecruitmentEnqueueService>();
+        enqueue.Setup(x => x.TryEnqueueAsync(
+                "CVE-LAB", "RCT-LAB", "SRT-LAB", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EnqueueDecision
+            {
+                Enqueued = true,
+                OutboxId = 77,
+                Message = "ok",
+                CriteriaCount = 1,
+                IntervenienteCount = 1
+            });
+
+        var scheduler = new Mock<IRecruitmentJobScheduler>();
+        var inner = new EnqueueAnalysisCommandHandler(enqueue.Object, scheduler.Object);
+        var mediator = new DelegateMediator(enqueueRequest => inner.Handle(enqueueRequest, CancellationToken.None));
+        var sut = new AnalyzeVacancyCommandHandler(
+            vacancies.Object,
+            srt.Object,
+            mediator,
+            NullLogger<AnalyzeVacancyCommandHandler>.Instance);
+
+        var result = await sut.Handle(
+            new AnalyzeVacancyCommand("  " + idRct + "  ", "denilson"),
+            CancellationToken.None);
+
+        result.IdRct.Should().Be(idRct);
+        result.RctStamp.Should().Be("RCT-LAB");
+        result.Enqueued.Should().Be(1);
+        result.Candidates.Should().ContainSingle(c => c.SrtStamp == "SRT-LAB" && c.OutboxId == 77);
+        scheduler.Verify(x => x.EnqueueAnalyze(77), Times.Once);
+        enqueue.Verify(x => x.TryEnqueueAsync(
+            "CVE-LAB", "RCT-LAB", "SRT-LAB", null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Analyze_EmptyIdRct_Throws()
+    {
+        var sut = new AnalyzeVacancyCommandHandler(
+            Mock.Of<IRctVacancyRepository>(),
+            Mock.Of<ISrtScoreRepository>(),
+            Mock.Of<IMediator>(),
+            NullLogger<AnalyzeVacancyCommandHandler>.Instance);
+
+        var act = async () => await sut.Handle(new AnalyzeVacancyCommand("   "), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*idrct*");
+    }
+
+    [Fact]
     public async Task RankingByIdRct_OrdersByScore_DoesNotWriteSelectionOrCondp()
     {
         var high = Row("SRT-HIGH", "CVE-H", "RCT-7", score: 30m, condp: "condp-humano", selection: "aberto|0|0");

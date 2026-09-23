@@ -19,7 +19,7 @@ public sealed class RecruitmentSchemaOptions
 
     public string RctTable { get; set; } = "rct";
     public string RctStampColumn { get; set; } = "rctstamp";
-    /// <summary>Public vacancy id (PHC rct.idrct). Route key; resolved to rctstamp.</summary>
+    /// <summary>Public vacancy id (PHC rct.idrct, string). Route key; resolved to rctstamp.</summary>
     public string RctIdColumn { get; set; } = "idrct";
 
     /// <summary>

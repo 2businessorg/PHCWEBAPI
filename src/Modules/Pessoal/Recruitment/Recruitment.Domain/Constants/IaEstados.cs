@@ -1,5 +1,11 @@
 namespace Recruitment.Domain.Constants;
 
+/// <summary>PHC rct.idrct is a string id.</summary>
+public static class RctIds
+{
+    public const int MaxLength = 50;
+}
+
 /// <summary>
 /// Values for CVE.u_estadoia (BR-12 / swimlane Analisar).
 /// </summary>
