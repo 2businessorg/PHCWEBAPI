@@ -143,5 +143,10 @@ public class ForbiddenCopyGuardTests
     {
         ForbiddenCopyGuard.ContainsForbiddenPhrase(HitlCopy.RankingTitle).Should().BeFalse();
         ForbiddenCopyGuard.ContainsForbiddenPhrase(HitlCopy.Footer).Should().BeFalse();
+        ForbiddenCopyGuard.ContainsForbiddenPhrase(HitlCopy.PreSelectionNote).Should().BeFalse();
+        ForbiddenCopyGuard.ContainsForbiddenPhrase(HitlCopy.AssistedDisclaimerPt).Should().BeFalse();
+        HitlCopy.Footer.Should().Contain("Decisão").And.Contain("só humana");
+        HitlCopy.RankingTitle.Should().Contain("Ordenação").And.Contain("não é decisão");
+        HitlCopy.PreSelectionNote.Should().Contain("pré-selecção").And.Contain("Não é decisão automática");
     }
 }

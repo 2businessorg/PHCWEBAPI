@@ -33,10 +33,10 @@ public static class OutboxEstados
 public static class HitlCopy
 {
     public const string RankingTitle =
-        "Ordenacao por score IA (input ao RH -- nao e decisao)";
+        "Ordenação por score IA (input ao RH — não é decisão)";
 
     public const string Footer =
-        "Score IA = input. Decisao de avancar/rejeitar e so humana no PHC.";
+        "Score IA = input. Decisão de avançar ou rejeitar é só humana no PHC.";
 
     public const string SemEvidencia = "Sem evidência no CV.";
 
@@ -48,7 +48,7 @@ public static class HitlCopy
     /// HITL ranking is the human pre-selection list. IA does not decide.
     /// </summary>
     public const string PreSelectionNote =
-        "Lista ordenada para pre-seleccao humana. Nao e decisao automatica da IA.";
+        "Lista ordenada para pré-selecção humana. Não é decisão automática da IA.";
 
     /// <summary>Forbidden substrings (case/accent-insensitive; pela IA | by AI) — AH-04 kill case.</summary>
     public static readonly string[] ForbiddenPhrases =

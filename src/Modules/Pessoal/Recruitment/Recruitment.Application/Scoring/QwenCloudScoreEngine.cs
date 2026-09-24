@@ -21,7 +21,7 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
     public const string LanguageRules =
         "Escreve justificationPt, rationalePt, strengthsPt e interviewValidationQuestionPt em português de Moçambique " +
         "(ortografia do Acordo Ortográfico, registo de recursos humanos empresarial). " +
-        "Frases curtas e claras. Acentos correctos. Sem calão e sem português informal do Brasil (você, a gente, pra, tô, arquivo). " +
+        "Frases curtas e claras. Acentos correctos. Sem calão e sem português informal do Brasil (você, a gente, pra, tô). " +
         "Não inventes palavras nem factos que a citação não sustente. " +
         "Capitaliza os produtos exactamente: PHC, Primavera, SAP, .NET, SQL Server. " +
         "Se não houver citação válida, note=0 e justificationPt=\"Sem evidência no CV.\". ";
@@ -145,7 +145,7 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         "Devolves apenas um objeto JSON valido. Sem markdown e sem texto antes ou depois.";
 
     internal const string RepairUserPrefix =
-        "A resposta anterior nao serviu. Return ONLY the JSON object, no markdown. " +
+        "A resposta anterior não serviu. Devolve apenas o objeto JSON, sem markdown. " +
         "Inclui criteria, recommendation.rationalePt, strengthsPt com 1 a 5 frases e interviewValidationQuestionPt. " +
         "Prosa em português de Moçambique, com acentos e produtos PHC, Primavera, SAP, .NET, SQL Server. " +
         "Usa somente o texto pseudonimizado abaixo.\n\n";

@@ -39,6 +39,7 @@ public class QwenCloudScoreTests
         QwenCloudScoreEngine.LanguageRules.Should().Contain("SQL Server");
         QwenCloudScoreEngine.LanguageRules.Should().Contain("Sem evidência no CV.");
         QwenCloudScoreEngine.LanguageRules.Should().Contain("informal do Brasil");
+        QwenCloudScoreEngine.LanguageRules.Should().NotContain("arquivo");
 
         PtMzProse.Apply("Experiência em primavera, sap, sql server, .net e phc.")
             .Should().Be("Experiência em Primavera, SAP, SQL Server, .NET e PHC.");
@@ -252,7 +253,7 @@ public class QwenCloudScoreTests
         score.Breakdown.Single().Quote.Should().Be(Quote);
         llm.Calls.Should().Be(1);
         llm.UserPrompts.Should().ContainSingle();
-        llm.UserPrompts[0].Should().NotContain("ONLY the JSON object");
+        llm.UserPrompts[0].Should().NotContain("apenas o objeto JSON");
     }
 
     [Fact]
@@ -291,7 +292,7 @@ public class QwenCloudScoreTests
 
         score.TotalScore.Should().Be(18);
         llm.Calls.Should().Be(2);
-        llm.UserPrompts[1].Should().Contain("ONLY the JSON object, no markdown");
+        llm.UserPrompts[1].Should().Contain("Devolve apenas o objeto JSON, sem markdown");
         llm.UserPrompts[1].Should().Contain(Pseudo);
         llm.UserPrompts[1].Should().NotContain(RawSecret);
     }
