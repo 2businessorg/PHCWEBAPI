@@ -77,8 +77,8 @@ public sealed class RubricEvidenceScorer : IRubricEvidenceScorer
             note = 0;
 
         var justification = conflict
-            ? $"Conflito detetado no criterio '{crt.Label}'. RH deve rever as citacoes."
-            : $"Evidencia encontrada para '{crt.Label}'.";
+            ? $"Conflito detetado no critério '{crt.Label}'. Os recursos humanos devem rever as citações."
+            : $"Evidência encontrada para '{crt.Label}'.";
 
         ForbiddenCopyGuard.ThrowIfForbidden(justification, nameof(justification));
 

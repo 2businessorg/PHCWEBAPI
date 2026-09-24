@@ -28,6 +28,42 @@ public class QwenCloudScoreTests
     private const string Quote = "SQL e PHC";
 
     [Fact]
+    public void Prompt_IsPtMz_AndProductNamesAreCanonical()
+    {
+        QwenCloudScoreEngine.PromptVer.Should().Be("qwen-cloud-v7");
+        QwenCloudScoreEngine.SystemPrompt.Should().Contain(QwenCloudScoreEngine.LanguageRules);
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("Moçambique");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("Primavera");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("SAP");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain(".NET");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("SQL Server");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("Sem evidência no CV.");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("informal do Brasil");
+        QwenCloudScoreEngine.LanguageRules.Should().NotContain("arquivo");
+
+        PtMzProse.Apply("Experiência em primavera, sap, sql server, .net e phc.")
+            .Should().Be("Experiência em Primavera, SAP, SQL Server, .NET e PHC.");
+    }
+
+    [Fact]
+    public async Task QwenEngine_Justification_NormalizesProductCasing()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"O texto cita primavera e sap."}""")
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.Breakdown.Single().JustificationPt.Should().Be("O texto cita Primavera e SAP.");
+        score.PromptVer.Should().Be("qwen-cloud-v7");
+    }
+
+    [Fact]
     public void Selector_CloudOn_ResolvesQwen_CloudOff_ResolvesRubric()
     {
         var llm = new StubLlm("qwen3-coder-next");
@@ -217,7 +253,7 @@ public class QwenCloudScoreTests
         score.Breakdown.Single().Quote.Should().Be(Quote);
         llm.Calls.Should().Be(1);
         llm.UserPrompts.Should().ContainSingle();
-        llm.UserPrompts[0].Should().NotContain("ONLY the JSON object");
+        llm.UserPrompts[0].Should().NotContain("apenas o objeto JSON");
     }
 
     [Fact]
@@ -256,7 +292,7 @@ public class QwenCloudScoreTests
 
         score.TotalScore.Should().Be(18);
         llm.Calls.Should().Be(2);
-        llm.UserPrompts[1].Should().Contain("ONLY the JSON object, no markdown");
+        llm.UserPrompts[1].Should().Contain("Devolve apenas o objeto JSON, sem markdown");
         llm.UserPrompts[1].Should().Contain(Pseudo);
         llm.UserPrompts[1].Should().NotContain(RawSecret);
     }
@@ -303,11 +339,68 @@ public class QwenCloudScoreTests
     }
 
     [Fact]
-    public async Task QwenEngine_MissingStrengths_FailsClosed()
+    public async Task QwenEngine_OverlongRationale_IsClamped_WithoutThrowing()
+    {
+        var longRationale = new string('A', 300) + ". " + new string('B', 400);
+        var json = CloudJson(
+            """{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}""")
+            .Replace("Ajuste assistido com base nas citacoes.", longRationale, StringComparison.Ordinal);
+        var llm = new StubLlm("qwen3-coder-next") { Response = json };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.RationalePt.Should().NotBeNull();
+        score.RationalePt!.Length.Should().BeLessThanOrEqualTo(QwenCloudScoreEngine.MaxRationaleLength);
+        score.RationalePt.Should().EndWith(".");
+        llm.Calls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task QwenEngine_MissingStrengths_AfterRepair_UsesCriterionJustification()
     {
         var llm = new StubLlm("qwen3-coder-next")
         {
             Response = """{"criteria":[{"code":"CRT-STACK","note":20,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}],"recommendation":{"decision":"avancar","rationalePt":"Texto curto."},"interviewValidationQuestionPt":"Qual o modulo?"}"""
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.StrengthsPt.Should().ContainSingle().Which.Should().Contain("stack");
+        llm.Calls.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task QwenEngine_MissingQuestion_AfterRepair_UsesDefault()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = """{"criteria":[{"code":"CRT-STACK","note":20,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}],"recommendation":{"decision":"avancar","rationalePt":"Texto curto."},"strengthsPt":["SQL e PHC citados no texto."]}"""
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.InterviewValidationQuestionPt.Should().Be(QwenCloudScoreEngine.DefaultInterviewQuestionPt);
+        llm.Calls.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task QwenEngine_MissingStrengths_AndNoEvidence_FailsBr08()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = """{"criteria":[{"code":"CRT-STACK","note":0,"quote":"","justificationPt":"Sem evidência no CV."}],"recommendation":{"decision":"em_duvida","rationalePt":"Texto curto."},"interviewValidationQuestionPt":"Qual o modulo?"}"""
         };
         var engine = new QwenCloudScoreEngine(llm);
         var act = async () => await engine.ScoreAsync(
@@ -316,6 +409,7 @@ public class QwenCloudScoreTests
             CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*strengthsPt*");
+        llm.Calls.Should().Be(2);
     }
 
     [Fact]
@@ -595,7 +689,7 @@ public class QwenCloudScoreTests
         audit.Should().Contain("PERSON");
         audit.Should().Contain("EMAIL_ADDRESS");
         audit.Should().Contain("\"leak_check_passed\":true");
-        audit.Should().Contain("qwen-cloud-v5");
+        audit.Should().Contain("qwen-cloud-v7");
         audit.Should().Contain("\"modelName\":\"qwen3-coder-next\"");
         audit.Should().Contain("\"usedLlm\":true");
         audit.Should().Contain("\"entityTypeCounts\"");

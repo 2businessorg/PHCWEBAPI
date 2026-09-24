@@ -48,7 +48,7 @@ public sealed class IndependentLeakChecker : ILeakChecker
                 continue;
             }
 
-            if (string.IsNullOrWhiteSpace(original) || original.Length < 3)
+            if (string.IsNullOrWhiteSpace(original) || original.Length < ContactSignals.MinPlaintextLength)
                 continue;
 
             if (policy.PreserveProfessionalSkills

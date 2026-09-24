@@ -8,10 +8,10 @@ Modulo `src/Modules/Pessoal/Recruitment` — score por rubrica + evidencia citad
 |----|-------------|
 | AH-01 | `RubricEvidenceScorer` only scores `IRctCriteriaRepository` rows for the RCT |
 | AH-02 | Rubric and non-LLM ranking: note&gt;0 quote must be an exact subset or the call throws (`AssertQuoteIsSubset`). Qwen: whitespace/Unicode is folded first; a quote that is still not a subset of the pseudonymized text zeros that criterion only (`note=0`, `AH-02: citacao rejeitada`) and does not fail the candidate. |
-| AH-03 | no evidence → note=0 + label `sem evidencia no CV` |
+| AH-03 | no evidence → note=0 + label `Sem evidência no CV.` |
 | AH-04 | `ForbiddenCopyGuard` + HITL title/footer; no auto-select endpoints (BR-09: never write `selection` / `condp`) |
 | AH-05 | year conflicts → `conflito` flag; no silent full-weight average |
-| AH-06 | justifications in pt-PT; no invented facts outside `u_texto` |
+| AH-06 | justifications in português de Moçambique (`qwen-cloud-v7`); no invented facts outside `u_texto` |
 | AH-07 | `srt.u_modeloia` + `u_prmveria` + `u_stampia` always written |
 | AH-08 | OCR fail → `cve.u_estadoia=erro`, `ClearScoreOnOcrError`, no `SaveScore` |
 

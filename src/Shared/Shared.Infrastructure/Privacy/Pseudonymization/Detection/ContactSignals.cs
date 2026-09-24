@@ -11,11 +11,15 @@ internal static class ContactSignals
 {
     internal const string EmailPattern = @"\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b";
 
+    /// <summary>Same floor as IndependentLeakChecker plaintext residual.</summary>
+    internal const int MinPlaintextLength = 3;
+
     /// <summary>
     /// PT mobile (optional +351) or Mozambique mobile 82-87 (optional +258).
+    /// Separators may repeat (OCR double spaces).
     /// </summary>
     internal const string PhonePattern =
-        @"(?:(?:\+351[\s\-]?)?9\d{2}(?:[\s\-]?\d{3}){2}|(?:\+258[\s\-]?)?8[2-7](?:[\s\-]?\d){7})";
+        @"(?:(?:\+351\s*)?9\d{2}(?:\s*\d{3}){2}|(?:\+258\s*)?8[2-7](?:\s*\d){7})";
 
     internal const string NifPattern = @"\b[123568]\d{8}\b";
 
