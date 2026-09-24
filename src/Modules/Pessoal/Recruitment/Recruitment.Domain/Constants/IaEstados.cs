@@ -40,6 +40,10 @@ public static class HitlCopy
 
     public const string SemEvidencia = "sem evidencia no CV";
 
+    /// <summary>Assisted recommendation copy. Not a PHC decision (AH-04).</summary>
+    public const string AssistedDisclaimerPt =
+        "Score e recomendação = input; não é selecção, rejeição ou avanço; decisão só humana no PHC.";
+
     /// <summary>
     /// HITL ranking is the human pre-selection list. IA does not decide.
     /// </summary>

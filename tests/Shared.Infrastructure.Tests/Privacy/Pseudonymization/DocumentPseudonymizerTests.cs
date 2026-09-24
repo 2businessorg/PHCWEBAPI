@@ -103,6 +103,68 @@ public class DocumentPseudonymizerTests
     }
 
     [Fact]
+    public async Task CloudEgress_AnonymizesEmailAndMzPhone_LeakCheckPasses()
+    {
+        var sut = CreateSut(requireSidecar: true, sidecarHealthy: true);
+        var plain = "Contacto maria.lab@example.co.mz ou +258 84 123 4567. Skills: Java, SQL.";
+
+        var result = await sut.PseudonymizeAsync(new PseudonymizationRequest(
+            "s-leak-pass",
+            "d-leak-pass",
+            plain,
+            PseudonymizationMode.CloudEgress,
+            new PseudonymizationPolicy()));
+
+        result.EgressAllowed.Should().BeTrue();
+        result.FailureReason.Should().BeNull();
+        result.LeakCheck.Passed.Should().BeTrue();
+        result.LeakCheck.Findings.Should().BeEmpty();
+        result.PseudonymizedText.Should().NotContain("maria.lab@example.co.mz");
+        result.PseudonymizedText.Should().NotContain("+258");
+        result.PseudonymizedText.Should().NotContain("84 123 4567");
+        result.PseudonymizedText.Should().Contain("Java");
+        result.PseudonymizedText.Should().Contain("SQL");
+    }
+
+    [Fact]
+    public async Task CloudEgress_OverlappingPresidioSpan_StillRedactsEmail()
+    {
+        var sut = CreateSut(
+            requireSidecar: true,
+            sidecarHealthy: true,
+            tryPresidio: true,
+            presidioSpans: text =>
+            {
+                const string email = "maria.lab@example.co.mz";
+                var at = text.IndexOf(email, StringComparison.Ordinal);
+                var start = Math.Max(0, at - 3);
+                var end = Math.Min(text.Length, start + 6);
+                return
+                [
+                    new RawEntitySpan(
+                        EntityTypes.Person,
+                        text.Substring(start, end - start),
+                        start,
+                        end,
+                        0.8f,
+                        "presidio.overlap")
+                ];
+            });
+
+        var result = await sut.PseudonymizeAsync(new PseudonymizationRequest(
+            "s-overlap",
+            "d-overlap",
+            "Contacto maria.lab@example.co.mz ou +258 84 123 4567.",
+            PseudonymizationMode.CloudEgress,
+            new PseudonymizationPolicy()));
+
+        result.EgressAllowed.Should().BeTrue();
+        result.LeakCheck.Passed.Should().BeTrue();
+        result.PseudonymizedText.Should().NotContain("example.co.mz");
+        result.PseudonymizedText.Should().NotContain("@");
+    }
+
+    [Fact]
     public async Task CloudEgress_WhenSidecarDown_Refuses_FailClosed()
     {
         var sut = CreateSut(requireSidecar: true, sidecarHealthy: false);
@@ -154,7 +216,11 @@ public class DocumentPseudonymizerTests
         detok.RejectedTokens.Should().Contain("{{EMPLOYER_deadbeef}}");
     }
 
-    private static DocumentPseudonymizer CreateSut(bool requireSidecar, bool sidecarHealthy = true)
+    private static DocumentPseudonymizer CreateSut(
+        bool requireSidecar,
+        bool sidecarHealthy = true,
+        bool tryPresidio = false,
+        Func<string, IReadOnlyList<RawEntitySpan>>? presidioSpans = null)
     {
         var options = Options.Create(new PseudonymizationOptions
         {
@@ -168,8 +234,8 @@ public class DocumentPseudonymizerTests
         var store = new InMemoryTokenMapStore();
         var access = new LoggingTokenMapAccessLogger(NullLogger<LoggingTokenMapAccessLogger>.Instance);
         var local = new RegexDictContextEntityDetector();
-        var presidio = new StubPresidioClient(sidecarHealthy);
-        var detector = new EnsembleEntityDetector(local, presidio, tryPresidio: false);
+        var presidio = new StubPresidioClient(sidecarHealthy, presidioSpans);
+        var detector = new EnsembleEntityDetector(local, presidio, tryPresidio);
         var resolver = new SimpleEntityResolver();
         var leak = new IndependentLeakChecker();
         var detoken = new SafeDetokenizer(access);
@@ -197,8 +263,13 @@ public class DocumentPseudonymizerTests
     private sealed class StubPresidioClient : IPresidioAnalyzerClient
     {
         private readonly bool _healthy;
+        private readonly Func<string, IReadOnlyList<RawEntitySpan>>? _spans;
 
-        public StubPresidioClient(bool healthy) => _healthy = healthy;
+        public StubPresidioClient(bool healthy, Func<string, IReadOnlyList<RawEntitySpan>>? spans = null)
+        {
+            _healthy = healthy;
+            _spans = spans;
+        }
 
         public Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(_healthy);
@@ -207,6 +278,6 @@ public class DocumentPseudonymizerTests
             string text,
             string language,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<RawEntitySpan>>(Array.Empty<RawEntitySpan>());
+            Task.FromResult(_spans?.Invoke(text) ?? (IReadOnlyList<RawEntitySpan>)Array.Empty<RawEntitySpan>());
     }
 }

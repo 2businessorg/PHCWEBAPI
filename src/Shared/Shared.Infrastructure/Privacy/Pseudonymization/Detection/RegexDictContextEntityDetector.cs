@@ -11,13 +11,13 @@ public sealed class RegexDictContextEntityDetector : IEntityDetector
     private static readonly (string Type, Regex Rx, string Source)[] Patterns =
     {
         (EntityTypes.EmailAddress,
-            new Regex(@"\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            ContactSignals.Email,
             "regex.email"),
         (EntityTypes.PhoneNumber,
-            new Regex(@"(?:\+351\s?)?(?:9\d{2}[\s\-]?\d{3}[\s\-]?\d{3}|\d{3}[\s\-]?\d{3}[\s\-]?\d{3})", RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            new Regex(ContactSignals.PhonePattern + @"|\d{3}(?:[\s\-]?\d{3}){2}", RegexOptions.CultureInvariant | RegexOptions.Compiled),
             "regex.phone_pt"),
         (EntityTypes.Nif,
-            new Regex(@"\b[123568]\d{8}\b", RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            ContactSignals.Nif,
             "regex.nif_pt"),
         (EntityTypes.Niss,
             new Regex(@"\b\d{11}\b", RegexOptions.CultureInvariant | RegexOptions.Compiled),

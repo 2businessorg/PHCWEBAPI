@@ -9,6 +9,7 @@
     <ProjectReference Include="../Recruitment.Domain/Recruitment.Domain.csproj" />
     <ProjectReference Include="../Recruitment.Application/Recruitment.Application.csproj" />
     <ProjectReference Include="../../../../Shared/Shared.Abstractions/Shared.Abstractions.csproj" />
+    <ProjectReference Include="../../../Ai/Agent.Application/Agent.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Hangfire.Core" Version="1.8.17" />

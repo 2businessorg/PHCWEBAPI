@@ -16,4 +16,14 @@ public sealed class AnalysisScoreResult
     public required DateTime StampUtc { get; init; }
 
     public bool UsedLlm { get; init; }
+
+    /// <summary>Assisted suggestion only: avancar, em_duvida, or nao_avancar.</summary>
+    public string? AssistedDecision { get; init; }
+
+    /// <summary>Model rationale for the assisted suggestion. Empty on the offline rubric.</summary>
+    public string? RationalePt { get; init; }
+
+    public IReadOnlyList<string> StrengthsPt { get; init; } = Array.Empty<string>();
+
+    public string? InterviewValidationQuestionPt { get; init; }
 }

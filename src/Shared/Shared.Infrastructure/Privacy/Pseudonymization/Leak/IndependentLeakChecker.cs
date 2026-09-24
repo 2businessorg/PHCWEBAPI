@@ -1,25 +1,20 @@
 using System.Text.RegularExpressions;
 using Shared.Abstractions.Privacy.Pseudonymization;
+using Shared.Infrastructure.Privacy.Pseudonymization.Detection;
 
 namespace Shared.Infrastructure.Privacy.Pseudonymization.Leak;
 
 /// <summary>
 /// Independent second-pass leak checker (fail-closed for CloudEgress).
-/// Diversifies signals: PT regex + session original plaintext presence + skill allowlist.
+/// Diversifies signals: PT/MZ contact regex + session original plaintext presence + skill allowlist.
 /// </summary>
 public sealed class IndependentLeakChecker : ILeakChecker
 {
-    private static readonly Regex EmailRx = new(
-        @"\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex EmailRx = ContactSignals.Email;
 
-    private static readonly Regex PhoneRx = new(
-        @"(?:\+351\s?)?(?:9\d{2}[\s\-]?\d{3}[\s\-]?\d{3})",
-        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex PhoneRx = ContactSignals.Phone;
 
-    private static readonly Regex NifRx = new(
-        @"\b[123568]\d{8}\b",
-        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex NifRx = ContactSignals.Nif;
 
     public Task<LeakCheckResult> CheckAsync(
         string candidateEgressText,
@@ -35,7 +30,7 @@ public sealed class IndependentLeakChecker : ILeakChecker
             findings.Add(new LeakFinding("regex.email", m.Value, m.Index, m.Index + m.Length));
 
         foreach (Match m in PhoneRx.Matches(candidateEgressText))
-            findings.Add(new LeakFinding("regex.phone_pt", m.Value, m.Index, m.Index + m.Length));
+            findings.Add(new LeakFinding("regex.phone", m.Value, m.Index, m.Index + m.Length));
 
         foreach (Match m in NifRx.Matches(candidateEgressText))
             findings.Add(new LeakFinding("regex.nif_pt", m.Value, m.Index, m.Index + m.Length));
