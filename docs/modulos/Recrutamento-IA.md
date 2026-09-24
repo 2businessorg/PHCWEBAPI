@@ -11,7 +11,7 @@ Modulo `src/Modules/Pessoal/Recruitment` — score por rubrica + evidencia citad
 | AH-03 | no evidence → note=0 + label `Sem evidência no CV.` |
 | AH-04 | `ForbiddenCopyGuard` + HITL title/footer; no auto-select endpoints (BR-09: never write `selection` / `condp`) |
 | AH-05 | year conflicts → `conflito` flag; no silent full-weight average |
-| AH-06 | justifications in pt-PT; no invented facts outside `u_texto` |
+| AH-06 | justifications in português de Moçambique (`qwen-cloud-v6`); no invented facts outside `u_texto` |
 | AH-07 | `srt.u_modeloia` + `u_prmveria` + `u_stampia` always written |
 | AH-08 | OCR fail → `cve.u_estadoia=erro`, `ClearScoreOnOcrError`, no `SaveScore` |
 
