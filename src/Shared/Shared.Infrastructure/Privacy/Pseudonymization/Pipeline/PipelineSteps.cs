@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using Shared.Abstractions.Privacy.Pseudonymization;
+using Shared.Infrastructure.Privacy.Pseudonymization.Detection;
 
 namespace Shared.Infrastructure.Privacy.Pseudonymization.Pipeline;
 
@@ -139,7 +141,66 @@ public sealed class TokenizeAndPersistStep : IPseudonymizationStep
                 replacements.Add((mention.Start, mention.End, token));
         }
 
-        context.PseudonymizedText = ApplyReplacements(context.NormalizedText, replacements);
+        var redacted = ApplyReplacements(context.NormalizedText, replacements);
+        context.PseudonymizedText = ScrubResidualPlaintext(redacted, context.MapEntries, _protector, req.Policy);
+    }
+
+    /// <summary>
+    /// LeakCheck compares every mapped original of length &gt;= 3 and the contact regexes.
+    /// Span replacement misses OCR duplicates and spacing variants, so scrub them here.
+    /// </summary>
+    private static string ScrubResidualPlaintext(
+        string text,
+        IReadOnlyList<TokenMapEntry> entries,
+        ITokenValueProtector protector,
+        PseudonymizationPolicy policy)
+    {
+        var scrubbed = text;
+        foreach (var entry in entries)
+        {
+            string original;
+            string normalized;
+            try
+            {
+                original = protector.Unprotect(entry.OriginalValueCipher);
+                normalized = entry.NormalizedValueCipher is null
+                    ? original
+                    : protector.Unprotect(entry.NormalizedValueCipher);
+            }
+            catch
+            {
+                continue;
+            }
+
+            scrubbed = RemoveMappedValue(scrubbed, original, policy);
+            if (!string.Equals(original, normalized, StringComparison.OrdinalIgnoreCase))
+                scrubbed = RemoveMappedValue(scrubbed, normalized, policy);
+        }
+
+        scrubbed = ContactSignals.Email.Replace(scrubbed, "{{CONTACT}}");
+        scrubbed = ContactSignals.Phone.Replace(scrubbed, "{{CONTACT}}");
+        scrubbed = ContactSignals.Nif.Replace(scrubbed, "{{CONTACT}}");
+        return scrubbed;
+    }
+
+    private static string RemoveMappedValue(string text, string value, PseudonymizationPolicy policy)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length < ContactSignals.MinPlaintextLength)
+            return text;
+        if (policy.PreserveProfessionalSkills
+            && ProfessionalSkillAllowlist.IsSkill(value, policy.ExtraAllowlist))
+            return text;
+
+        var flexible = FlexibleWhitespacePattern(value);
+        return Regex.Replace(text, flexible, "{{CONTACT}}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private static string FlexibleWhitespacePattern(string value)
+    {
+        var parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return Regex.Escape(value);
+        return string.Join(@"\s+", parts.Select(Regex.Escape));
     }
 
     private static string ApplyReplacements(string text, List<(int Start, int End, string Token)> replacements)

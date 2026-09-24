@@ -165,6 +165,43 @@ public class DocumentPseudonymizerTests
     }
 
     [Fact]
+    public async Task CloudEgress_OcrDuplicateAndShortName_ScrubsResidualBeforeLeakCheck()
+    {
+        var sut = CreateSut(
+            requireSidecar: true,
+            sidecarHealthy: true,
+            tryPresidio: true,
+            presidioSpans: text =>
+            {
+                var at = text.IndexOf("Ana", StringComparison.Ordinal);
+                return
+                [
+                    new RawEntitySpan(EntityTypes.Person, "Ana", at, at + 3, 0.9f, "presidio.person")
+                ];
+            });
+
+        var plain =
+            "Ana CV. Mail ana.lab@example.co.mz tel +258 84 123 4567. " +
+            "OCR copia Ana outra vez ana.lab@example.co.mz e +258  84  123  4567.";
+
+        var result = await sut.PseudonymizeAsync(new PseudonymizationRequest(
+            "s-ocr",
+            "d-ocr",
+            plain,
+            PseudonymizationMode.CloudEgress,
+            new PseudonymizationPolicy()));
+
+        result.EgressAllowed.Should().BeTrue();
+        result.LeakCheck.Passed.Should().BeTrue(string.Join(",", result.LeakCheck.Findings.Select(f => f.Kind)));
+        result.PseudonymizedText.Should().NotContain("ana.lab@example.co.mz");
+        result.PseudonymizedText.Should().NotContain("+258");
+        result.PseudonymizedText.Should().NotContain("84 123 4567");
+        result.LeakCheck.Findings.Should().NotContain(f => f.Kind == "session.plaintext_residual");
+        result.LeakCheck.Findings.Should().NotContain(f => f.Kind == "regex.email");
+        result.LeakCheck.Findings.Should().NotContain(f => f.Kind == "regex.phone");
+    }
+
+    [Fact]
     public async Task CloudEgress_WhenSidecarDown_Refuses_FailClosed()
     {
         var sut = CreateSut(requireSidecar: true, sidecarHealthy: false);
