@@ -28,6 +28,41 @@ public class QwenCloudScoreTests
     private const string Quote = "SQL e PHC";
 
     [Fact]
+    public void Prompt_IsPtMz_AndProductNamesAreCanonical()
+    {
+        QwenCloudScoreEngine.PromptVer.Should().Be("qwen-cloud-v6");
+        QwenCloudScoreEngine.SystemPrompt.Should().Contain(QwenCloudScoreEngine.LanguageRules);
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("Moçambique");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("Primavera");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("SAP");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain(".NET");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("SQL Server");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("Sem evidência no CV.");
+        QwenCloudScoreEngine.LanguageRules.Should().Contain("informal do Brasil");
+
+        PtMzProse.Apply("Experiência em primavera, sap, sql server, .net e phc.")
+            .Should().Be("Experiência em Primavera, SAP, SQL Server, .NET e PHC.");
+    }
+
+    [Fact]
+    public async Task QwenEngine_Justification_NormalizesProductCasing()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = CloudJson(
+                """{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"O texto cita primavera e sap."}""")
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.Breakdown.Single().JustificationPt.Should().Be("O texto cita Primavera e SAP.");
+        score.PromptVer.Should().Be("qwen-cloud-v6");
+    }
+
+    [Fact]
     public void Selector_CloudOn_ResolvesQwen_CloudOff_ResolvesRubric()
     {
         var llm = new StubLlm("qwen3-coder-next");
@@ -595,7 +630,7 @@ public class QwenCloudScoreTests
         audit.Should().Contain("PERSON");
         audit.Should().Contain("EMAIL_ADDRESS");
         audit.Should().Contain("\"leak_check_passed\":true");
-        audit.Should().Contain("qwen-cloud-v5");
+        audit.Should().Contain("qwen-cloud-v6");
         audit.Should().Contain("\"modelName\":\"qwen3-coder-next\"");
         audit.Should().Contain("\"usedLlm\":true");
         audit.Should().Contain("\"entityTypeCounts\"");

@@ -13,9 +13,18 @@ namespace Recruitment.Application.Scoring;
 /// </summary>
 public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 {
-    public const string PromptVer = "qwen-cloud-v5";
+    public const string PromptVer = "qwen-cloud-v6";
 
-    public const string RejectedQuoteJustification = "AH-02: citacao rejeitada; criterio sem nota.";
+    public const string RejectedQuoteJustification = "AH-02: citação rejeitada; critério sem nota.";
+
+    /// <summary>pt-MZ corporate RH register. Embedded in <see cref="SystemPrompt"/>.</summary>
+    public const string LanguageRules =
+        "Escreve justificationPt, rationalePt, strengthsPt e interviewValidationQuestionPt em português de Moçambique " +
+        "(ortografia do Acordo Ortográfico, registo de recursos humanos empresarial). " +
+        "Frases curtas e claras. Acentos correctos. Sem calão e sem português informal do Brasil (você, a gente, pra, tô, arquivo). " +
+        "Não inventes palavras nem factos que a citação não sustente. " +
+        "Capitaliza os produtos exactamente: PHC, Primavera, SAP, .NET, SQL Server. " +
+        "Se não houver citação válida, note=0 e justificationPt=\"Sem evidência no CV.\". ";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -89,9 +98,9 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             if (total > 100) total = 100;
 
             var assisted = AssistedRecommendationBuilder.Build(breakdown);
-            var strengths = RequireStrengths(document.StrengthsPt);
-            var question = RequireNarrative(document.InterviewValidationQuestionPt, "interviewValidationQuestionPt", 300);
-            var rationale = RequireNarrative(document.Recommendation?.RationalePt, "rationalePt", 500);
+            var strengths = RequireStrengths(document.StrengthsPt).Select(PtMzProse.Apply).ToList();
+            var question = PtMzProse.Apply(RequireNarrative(document.InterviewValidationQuestionPt, "interviewValidationQuestionPt", 300));
+            var rationale = PtMzProse.Apply(RequireNarrative(document.Recommendation?.RationalePt, "rationalePt", 500));
 
             result = new AnalysisScoreResult
             {
@@ -115,19 +124,19 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         }
     }
 
-    internal const string SystemPrompt =
-        "Es um avaliador de recrutamento. Devolves apenas JSON, sem markdown. " +
+    public const string SystemPrompt =
+        "És um avaliador de recrutamento. Devolves apenas JSON, sem markdown. " +
         "Prompt " + PromptVer + ". " +
-        "Pontua somente os criterios recebidos. note e um numero entre 0 e weight. " +
-        "Se note>0, quote e uma citacao contigua exacta do texto (maximo 240 caracteres). " +
-        "Se nao ha evidencia, note=0, quote vazio, justificationPt=\"sem evidencia no CV\". " +
-        "Justificacao em pt-PT. Nao inventes factos fora do texto. " +
-        "O score e input ao RH. decision so pode ser avancar, em_duvida ou nao_avancar. " +
-        "Sem evidencia ou conflito no criterio: em_duvida. " +
-        "Nao declares seleccao, rejeicao, contratacao ou aprovacao. " +
-        "Pesos sao os da lista. Nao inventes pesos nem criterios. " +
-        "Nao escrevas nomes, emails ou telefones. " +
-        "strengthsPt: 1 a 5 frases curtas. interviewValidationQuestionPt: uma pergunta. rationalePt: justificacao curta da sugestao. " +
+        LanguageRules +
+        "Pontua somente os critérios recebidos. note é um número entre 0 e weight. " +
+        "Se note>0, quote é uma citação contígua exacta do texto (máximo 240 caracteres). " +
+        "Se não há evidência, note=0, quote vazio, justificationPt=\"Sem evidência no CV.\". " +
+        "O score é input ao RH. decision só pode ser avancar, em_duvida ou nao_avancar. " +
+        "Sem evidência ou conflito no critério: em_duvida. " +
+        "Não declares selecção, rejeição, contratação ou aprovação. " +
+        "Pesos são os da lista. Não inventes pesos nem critérios. " +
+        "Não escrevas nomes, emails ou telefones. " +
+        "strengthsPt: 1 a 5 frases curtas. interviewValidationQuestionPt: uma pergunta. rationalePt: justificação curta da sugestão. " +
         "Formato: {\"criteria\":[{\"code\":\"\",\"note\":0,\"quote\":\"\",\"justificationPt\":\"\",\"conflito\":false}]," +
         "\"recommendation\":{\"decision\":\"em_duvida\",\"rationalePt\":\"\"}," +
         "\"strengthsPt\":[\"\"],\"interviewValidationQuestionPt\":\"\"}";
@@ -138,6 +147,7 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
     internal const string RepairUserPrefix =
         "A resposta anterior nao serviu. Return ONLY the JSON object, no markdown. " +
         "Inclui criteria, recommendation.rationalePt, strengthsPt com 1 a 5 frases e interviewValidationQuestionPt. " +
+        "Prosa em português de Moçambique, com acentos e produtos PHC, Primavera, SAP, .NET, SQL Server. " +
         "Usa somente o texto pseudonimizado abaixo.\n\n";
 
     internal static string BuildUserPrompt(string evidenceText, IReadOnlyList<RctCriterion> criteria)
@@ -326,8 +336,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         var justification = quoteRejected
             ? RejectedQuoteJustification
             : string.IsNullOrWhiteSpace(row?.JustificationPt)
-                ? (note <= 0 ? HitlCopy.SemEvidencia : $"Evidencia encontrada para '{crt.Label}'.")
-                : row!.JustificationPt!.Trim();
+                ? (note <= 0 ? HitlCopy.SemEvidencia : $"Evidência encontrada para '{crt.Label}'.")
+                : PtMzProse.Apply(row!.JustificationPt!.Trim());
         ForbiddenCopyGuard.ThrowIfForbidden(justification, crt.Code);
 
         var offset = quote is null ? (int?)null : evidenceText.IndexOf(quote, StringComparison.Ordinal);

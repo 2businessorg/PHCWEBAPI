@@ -38,7 +38,7 @@ public static class HitlCopy
     public const string Footer =
         "Score IA = input. Decisao de avancar/rejeitar e so humana no PHC.";
 
-    public const string SemEvidencia = "sem evidencia no CV";
+    public const string SemEvidencia = "Sem evidência no CV.";
 
     /// <summary>Assisted recommendation copy. Not a PHC decision (AH-04).</summary>
     public const string AssistedDisclaimerPt =
