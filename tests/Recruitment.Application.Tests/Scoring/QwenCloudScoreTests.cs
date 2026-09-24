@@ -179,6 +179,130 @@ public class QwenCloudScoreTests
         };
 
     [Fact]
+    public async Task QwenEngine_FencedJson_ScoresWithoutRetry()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = "```json\n" + CloudJson(
+                """{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}""") + "\n```"
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.TotalScore.Should().Be(18);
+        score.AssistedDecision.Should().Be(AssistedDecisions.Avancar);
+        llm.Calls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task QwenEngine_ProseAroundJson_ScoresWithoutRetry()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Response = "Segue o score.\n" + CloudJson(
+                """{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}""")
+                + "\nNota extra com chaveta } no fim."
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.Breakdown.Single().Quote.Should().Be(Quote);
+        llm.Calls.Should().Be(1);
+        llm.UserPrompts.Should().ContainSingle();
+        llm.UserPrompts[0].Should().NotContain("ONLY the JSON object");
+    }
+
+    [Fact]
+    public async Task QwenEngine_StrengthsAsString_IsAccepted()
+    {
+        var json = """{"criteria":[{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}],"recommendation":{"decision":"avancar","rationalePt":"Ajuste assistido com base nas citacoes."},"strengthsPt":"SQL e PHC citados no texto.","interviewValidationQuestionPt":"Que modulos PHC usou no ultimo projecto?"}""";
+        var llm = new StubLlm("qwen3-coder-next") { Response = json };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.StrengthsPt.Should().ContainSingle().Which.Should().Be("SQL e PHC citados no texto.");
+        llm.Calls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task QwenEngine_TruncatedJson_RetriesOnce_ThenScores()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Responses =
+            [
+                """{"criteria":[{"code":"CRT-STACK","note":18""",
+                CloudJson("""{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}""")
+            ]
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.TotalScore.Should().Be(18);
+        llm.Calls.Should().Be(2);
+        llm.UserPrompts[1].Should().Contain("ONLY the JSON object, no markdown");
+        llm.UserPrompts[1].Should().Contain(Pseudo);
+        llm.UserPrompts[1].Should().NotContain(RawSecret);
+    }
+
+    [Fact]
+    public async Task QwenEngine_MissingStrengths_RetriesOnce_ThenScores()
+    {
+        var broken = """{"criteria":[{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}],"recommendation":{"decision":"avancar","rationalePt":"Ajuste assistido com base nas citacoes."},"interviewValidationQuestionPt":"Que modulos PHC usou no ultimo projecto?"}""";
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Responses =
+            [
+                broken,
+                CloudJson("""{"code":"CRT-STACK","note":18,"quote":"SQL e PHC","justificationPt":"Evidencia de stack no texto."}""")
+            ]
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var score = await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        score.StrengthsPt.Should().ContainSingle();
+        llm.Calls.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task QwenEngine_StillInvalidAfterRepair_FailsBr08()
+    {
+        var llm = new StubLlm("qwen3-coder-next")
+        {
+            Responses = ["nao e json", "ainda sem objeto"]
+        };
+        var engine = new QwenCloudScoreEngine(llm);
+
+        var act = async () => await engine.ScoreAsync(
+            Pseudo,
+            [new RctCriterion { Code = "CRT-STACK", Label = "Stack", Weight = 25 }],
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*BR-08*");
+        llm.Calls.Should().Be(2);
+    }
+
+    [Fact]
     public async Task QwenEngine_MissingStrengths_FailsClosed()
     {
         var llm = new StubLlm("qwen3-coder-next")
@@ -700,11 +824,20 @@ public class QwenCloudScoreTests
 
         public string Response { get; init; } = "{}";
 
+        public string[]? Responses { get; init; }
+
         public string? LastUser { get; private set; }
+
+        public List<string> UserPrompts { get; } = new();
+
+        public int Calls => UserPrompts.Count;
 
         public Task<string> CompleteAsync(string systemPrompt, string userPrompt, CancellationToken cancellationToken)
         {
             LastUser = userPrompt;
+            UserPrompts.Add(userPrompt);
+            if (Responses is not null && UserPrompts.Count <= Responses.Length)
+                return Task.FromResult(Responses[UserPrompts.Count - 1]);
             return Task.FromResult(Response);
         }
     }

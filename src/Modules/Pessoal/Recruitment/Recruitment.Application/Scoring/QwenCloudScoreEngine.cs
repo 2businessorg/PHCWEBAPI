@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Recruitment.Domain.Constants;
 using Recruitment.Domain.Entities;
 
@@ -40,45 +41,78 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         if (string.IsNullOrWhiteSpace(_llm.ModelName))
             throw new InvalidOperationException("BR-08: modelo Qwen nao configurado.");
 
-        var content = await _llm.CompleteAsync(SystemPrompt, BuildUserPrompt(evidenceText, criteria), cancellationToken);
-        var document = Parse(content);
-        var parsed = document.Criteria ?? new List<CloudCriterionRow>();
-        var byCode = new Dictionary<string, CloudCriterionRow>(StringComparer.OrdinalIgnoreCase);
-        foreach (var row in parsed)
+        var userPrompt = BuildUserPrompt(evidenceText, criteria);
+        var content = await _llm.CompleteAsync(SystemPrompt, userPrompt, cancellationToken);
+        if (TryMaterialize(content, evidenceText, criteria, out var result, out var parseError))
+            return result!;
+
+        content = await _llm.CompleteAsync(
+            RepairSystemPrompt,
+            RepairUserPrefix + userPrompt,
+            cancellationToken);
+        if (TryMaterialize(content, evidenceText, criteria, out result, out parseError))
+            return result!;
+
+        throw new InvalidOperationException(parseError);
+    }
+
+    private bool TryMaterialize(
+        string? content,
+        string evidenceText,
+        IReadOnlyList<RctCriterion> criteria,
+        out AnalysisScoreResult? result,
+        out string error)
+    {
+        result = null;
+        if (!TryReadScore(content, out var document, out error))
+            return false;
+
+        try
         {
-            if (!string.IsNullOrWhiteSpace(row.Code))
-                byCode.TryAdd(row.Code.Trim(), row);
+            var parsed = document.Criteria ?? new List<CloudCriterionRow>();
+            var byCode = new Dictionary<string, CloudCriterionRow>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in parsed)
+            {
+                if (!string.IsNullOrWhiteSpace(row.Code))
+                    byCode.TryAdd(row.Code.Trim(), row);
+            }
+
+            var breakdown = new List<CriterionScoreBreakdown>(criteria.Count);
+            foreach (var crt in criteria)
+            {
+                byCode.TryGetValue(crt.Code, out var row);
+                breakdown.Add(MapCriterion(evidenceText, crt, row));
+            }
+
+            var total = breakdown.Sum(b => b.Note);
+            if (total < 0) total = 0;
+            if (total > 100) total = 100;
+
+            var assisted = AssistedRecommendationBuilder.Build(breakdown);
+            var strengths = RequireStrengths(document.StrengthsPt);
+            var question = RequireNarrative(document.InterviewValidationQuestionPt, "interviewValidationQuestionPt", 300);
+            var rationale = RequireNarrative(document.Recommendation?.RationalePt, "rationalePt", 500);
+
+            result = new AnalysisScoreResult
+            {
+                TotalScore = decimal.Round(total, 2, MidpointRounding.AwayFromZero),
+                Breakdown = breakdown,
+                EngineName = _llm.ModelName,
+                PromptVer = PromptVer,
+                StampUtc = DateTime.UtcNow,
+                UsedLlm = true,
+                AssistedDecision = assisted.Decision,
+                RationalePt = rationale,
+                StrengthsPt = strengths,
+                InterviewValidationQuestionPt = question
+            };
+            return true;
         }
-
-        var breakdown = new List<CriterionScoreBreakdown>(criteria.Count);
-        foreach (var crt in criteria)
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("BR-08", StringComparison.Ordinal))
         {
-            byCode.TryGetValue(crt.Code, out var row);
-            breakdown.Add(MapCriterion(evidenceText, crt, row));
+            error = ex.Message;
+            return false;
         }
-
-        var total = breakdown.Sum(b => b.Note);
-        if (total < 0) total = 0;
-        if (total > 100) total = 100;
-
-        var assisted = AssistedRecommendationBuilder.Build(breakdown);
-        var strengths = RequireStrengths(document.StrengthsPt);
-        var question = RequireNarrative(document.InterviewValidationQuestionPt, "interviewValidationQuestionPt", 300);
-        var rationale = RequireNarrative(document.Recommendation?.RationalePt, "rationalePt", 500);
-
-        return new AnalysisScoreResult
-        {
-            TotalScore = decimal.Round(total, 2, MidpointRounding.AwayFromZero),
-            Breakdown = breakdown,
-            EngineName = _llm.ModelName,
-            PromptVer = PromptVer,
-            StampUtc = DateTime.UtcNow,
-            UsedLlm = true,
-            AssistedDecision = assisted.Decision,
-            RationalePt = rationale,
-            StrengthsPt = strengths,
-            InterviewValidationQuestionPt = question
-        };
     }
 
     internal const string SystemPrompt =
@@ -97,6 +131,14 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         "Formato: {\"criteria\":[{\"code\":\"\",\"note\":0,\"quote\":\"\",\"justificationPt\":\"\",\"conflito\":false}]," +
         "\"recommendation\":{\"decision\":\"em_duvida\",\"rationalePt\":\"\"}," +
         "\"strengthsPt\":[\"\"],\"interviewValidationQuestionPt\":\"\"}";
+
+    internal const string RepairSystemPrompt =
+        "Devolves apenas um objeto JSON valido. Sem markdown e sem texto antes ou depois.";
+
+    internal const string RepairUserPrefix =
+        "A resposta anterior nao serviu. Return ONLY the JSON object, no markdown. " +
+        "Inclui criteria, recommendation.rationalePt, strengthsPt com 1 a 5 frases e interviewValidationQuestionPt. " +
+        "Usa somente o texto pseudonimizado abaixo.\n\n";
 
     internal static string BuildUserPrompt(string evidenceText, IReadOnlyList<RctCriterion> criteria)
     {
@@ -118,18 +160,57 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         return sb.ToString();
     }
 
-    private static CloudScoreDocument Parse(string? content)
+    private static bool TryReadScore(string? content, out CloudScoreDocument document, out string error)
     {
-        var json = ExtractJson(content);
+        document = new CloudScoreDocument();
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            error = "BR-08: resposta Qwen vazia.";
+            return false;
+        }
+
+        if (!LlmJsonObject.TryExtract(content, out var json))
+        {
+            error = "BR-08: resposta Qwen nao e JSON de score.";
+            return false;
+        }
+
         try
         {
-            return JsonSerializer.Deserialize<CloudScoreDocument>(json, JsonOptions)
-                ?? throw new InvalidOperationException("BR-08: resposta Qwen nao e JSON de score.");
+            document = JsonSerializer.Deserialize<CloudScoreDocument>(json, JsonOptions)
+                ?? new CloudScoreDocument();
+            document.StrengthsPt = ReadStrengths(json);
+            error = string.Empty;
+            return true;
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException("BR-08: resposta Qwen nao e JSON de score.");
+            error = "BR-08: resposta Qwen nao e JSON de score.";
+            return false;
         }
+    }
+
+    /// <summary>Accepts a JSON array or a single string. Schema size is checked later.</summary>
+    private static List<string>? ReadStrengths(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        if (!doc.RootElement.TryGetProperty("strengthsPt", out var node)
+            && !doc.RootElement.TryGetProperty("StrengthsPt", out node))
+            return null;
+
+        if (node.ValueKind == JsonValueKind.String)
+        {
+            var text = node.GetString();
+            return string.IsNullOrWhiteSpace(text) ? new List<string>() : new List<string> { text };
+        }
+
+        if (node.ValueKind != JsonValueKind.Array)
+            return new List<string>();
+
+        return node.EnumerateArray()
+            .Where(item => item.ValueKind == JsonValueKind.String)
+            .Select(item => item.GetString() ?? string.Empty)
+            .ToList();
     }
 
     private static IReadOnlyList<string> RequireStrengths(IReadOnlyList<string>? raw)
@@ -183,7 +264,9 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
     /// </summary>
     public static string? ReadAllowedDecision(string? content)
     {
-        var json = ExtractJson(content);
+        if (!LlmJsonObject.TryExtract(content, out var json))
+            return null;
+
         try
         {
             using var doc = JsonDocument.Parse(json);
@@ -204,28 +287,6 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         {
             return null;
         }
-    }
-
-    internal static string ExtractJson(string? content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-            throw new InvalidOperationException("BR-08: resposta Qwen vazia.");
-
-        var trimmed = content.Trim();
-        if (trimmed.StartsWith("```", StringComparison.Ordinal))
-        {
-            var firstNl = trimmed.IndexOf('\n');
-            var lastFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
-            if (firstNl >= 0 && lastFence > firstNl)
-                trimmed = trimmed[(firstNl + 1)..lastFence].Trim();
-        }
-
-        var start = trimmed.IndexOf('{');
-        var end = trimmed.LastIndexOf('}');
-        if (start < 0 || end <= start)
-            throw new InvalidOperationException("BR-08: resposta Qwen nao e JSON de score.");
-
-        return trimmed[start..(end + 1)];
     }
 
     private static CriterionScoreBreakdown MapCriterion(
@@ -295,6 +356,7 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 
         public CloudRecommendation? Recommendation { get; set; }
 
+        [JsonIgnore]
         public List<string>? StrengthsPt { get; set; }
 
         public string? InterviewValidationQuestionPt { get; set; }
