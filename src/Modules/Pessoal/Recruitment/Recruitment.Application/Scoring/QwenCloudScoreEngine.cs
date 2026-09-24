@@ -13,7 +13,16 @@ namespace Recruitment.Application.Scoring;
 /// </summary>
 public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 {
-    public const string PromptVer = "qwen-cloud-v6";
+    public const string PromptVer = "qwen-cloud-v7";
+
+    public const int MaxRationaleLength = 500;
+
+    public const int MaxQuestionLength = 300;
+
+    public const int MaxStrengthLength = 180;
+
+    public const string DefaultInterviewQuestionPt =
+        "Que evidência do currículo deve o RH confirmar na entrevista?";
 
     public const string RejectedQuoteJustification = "AH-02: citação rejeitada; critério sem nota.";
 
@@ -52,14 +61,14 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
 
         var userPrompt = BuildUserPrompt(evidenceText, criteria);
         var content = await _llm.CompleteAsync(SystemPrompt, userPrompt, cancellationToken);
-        if (TryMaterialize(content, evidenceText, criteria, out var result, out var parseError))
+        if (TryMaterialize(content, evidenceText, criteria, afterRepair: false, out var result, out var parseError))
             return result!;
 
         content = await _llm.CompleteAsync(
             RepairSystemPrompt,
             RepairUserPrefix + userPrompt,
             cancellationToken);
-        if (TryMaterialize(content, evidenceText, criteria, out result, out parseError))
+        if (TryMaterialize(content, evidenceText, criteria, afterRepair: true, out result, out parseError))
             return result!;
 
         throw new InvalidOperationException(parseError);
@@ -69,6 +78,7 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
         string? content,
         string evidenceText,
         IReadOnlyList<RctCriterion> criteria,
+        bool afterRepair,
         out AnalysisScoreResult? result,
         out string error)
     {
@@ -98,9 +108,8 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             if (total > 100) total = 100;
 
             var assisted = AssistedRecommendationBuilder.Build(breakdown);
-            var strengths = RequireStrengths(document.StrengthsPt).Select(PtMzProse.Apply).ToList();
-            var question = PtMzProse.Apply(RequireNarrative(document.InterviewValidationQuestionPt, "interviewValidationQuestionPt", 300));
-            var rationale = PtMzProse.Apply(RequireNarrative(document.Recommendation?.RationalePt, "rationalePt", 500));
+            if (!TryResolveNarrative(document, breakdown, afterRepair, out var strengths, out var question, out var rationale, out error))
+                return false;
 
             result = new AnalysisScoreResult
             {
@@ -223,39 +232,116 @@ public sealed class QwenCloudScoreEngine : ICandidateScoreEngine
             .ToList();
     }
 
-    private static IReadOnlyList<string> RequireStrengths(IReadOnlyList<string>? raw)
+    private static bool TryResolveNarrative(
+        CloudScoreDocument document,
+        IReadOnlyList<CriterionScoreBreakdown> breakdown,
+        bool afterRepair,
+        out IReadOnlyList<string> strengths,
+        out string question,
+        out string rationale,
+        out string error)
     {
-        var items = (raw ?? Array.Empty<string>())
-            .Select(s => s?.Trim())
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Cast<string>()
-            .ToList();
-        if (items.Count is < 1 or > 5)
-            throw new InvalidOperationException("BR-08: resposta Qwen sem strengthsPt (1 a 5).");
+        strengths = NormalizeStrengths(document.StrengthsPt);
+        question = string.Empty;
+        rationale = string.Empty;
+        error = string.Empty;
 
-        foreach (var item in items)
+        if (strengths.Count == 0)
         {
-            if (item.Length > 180)
-                throw new InvalidOperationException("BR-08: strengthsPt demasiado longo.");
-            RejectContact(item, "strengthsPt");
-            ForbiddenCopyGuard.ThrowIfForbidden(item, "strengthsPt");
+            if (!afterRepair)
+            {
+                error = "BR-08: resposta Qwen sem strengthsPt (1 a 5).";
+                return false;
+            }
+
+            strengths = DeriveStrengths(breakdown);
+            if (strengths.Count == 0)
+            {
+                error = "BR-08: resposta Qwen sem strengthsPt (1 a 5).";
+                return false;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(document.InterviewValidationQuestionPt))
+        {
+            if (!afterRepair)
+            {
+                error = "BR-08: resposta Qwen sem interviewValidationQuestionPt.";
+                return false;
+            }
+
+            question = DefaultInterviewQuestionPt;
+        }
+        else
+        {
+            question = PtMzProse.Apply(ClampNarrative(document.InterviewValidationQuestionPt, MaxQuestionLength));
+            RejectContact(question, "interviewValidationQuestionPt");
+            ForbiddenCopyGuard.ThrowIfForbidden(question, "interviewValidationQuestionPt");
+        }
+
+        if (string.IsNullOrWhiteSpace(document.Recommendation?.RationalePt))
+        {
+            error = "BR-08: resposta Qwen sem rationalePt.";
+            return false;
+        }
+
+        rationale = PtMzProse.Apply(ClampNarrative(document.Recommendation.RationalePt, MaxRationaleLength));
+        RejectContact(rationale, "rationalePt");
+        ForbiddenCopyGuard.ThrowIfForbidden(rationale, "rationalePt");
+        return true;
+    }
+
+    private static List<string> NormalizeStrengths(IReadOnlyList<string>? raw)
+    {
+        var items = new List<string>();
+        foreach (var value in raw ?? Array.Empty<string>())
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                continue;
+            var text = PtMzProse.Apply(ClampNarrative(value, MaxStrengthLength));
+            RejectContact(text, "strengthsPt");
+            ForbiddenCopyGuard.ThrowIfForbidden(text, "strengthsPt");
+            items.Add(text);
+            if (items.Count == 5)
+                break;
         }
 
         return items;
     }
 
-    private static string RequireNarrative(string? value, string field, int maxLength)
+    private static List<string> DeriveStrengths(IReadOnlyList<CriterionScoreBreakdown> breakdown)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new InvalidOperationException($"BR-08: resposta Qwen sem {field}.");
+        var items = new List<string>();
+        foreach (var row in breakdown)
+        {
+            if (row.Note <= 0 || string.IsNullOrWhiteSpace(row.JustificationPt))
+                continue;
+            if (string.Equals(row.JustificationPt, HitlCopy.SemEvidencia, StringComparison.Ordinal))
+                continue;
+            items.Add(PtMzProse.Apply(ClampNarrative(row.JustificationPt, MaxStrengthLength)));
+            if (items.Count == 3)
+                break;
+        }
 
-        var text = value.Trim();
-        if (text.Length > maxLength)
-            throw new InvalidOperationException($"BR-08: {field} demasiado longo.");
+        return items;
+    }
 
-        RejectContact(text, field);
-        ForbiddenCopyGuard.ThrowIfForbidden(text, field);
-        return text;
+    internal static string ClampNarrative(string text, int maxLength)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.Length <= maxLength)
+            return trimmed;
+
+        var window = trimmed[..maxLength];
+        var boundary = window.LastIndexOfAny(['.', '!', '?']);
+        if (boundary >= maxLength / 2)
+            return window[..(boundary + 1)].Trim();
+
+        var space = window.LastIndexOf(' ');
+        if (space >= maxLength / 2)
+            return window[..space].TrimEnd() + ".";
+
+        return window.TrimEnd();
     }
 
     private static void RejectContact(string text, string field)
